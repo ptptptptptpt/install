@@ -119,7 +119,7 @@ sed -i "s/__RABBITMQ_PWD__/${RABBITMQ_PWD}/g" /etc/stackube/openstack/cinder-api
 
 cp -f ${OS_CACERT} /etc/stackube/openstack/cinder-api/haproxy-ca.crt || exit 1
 
-docker run -it --net host  \
+docker run --net host  \
     --name stackube_bootstrap_cinder  \
     -v /etc/stackube/openstack/cinder-api/:/var/lib/kolla/config_files/:ro  \
     -v /var/log/stackube/openstack:/var/log/kolla/:rw  \

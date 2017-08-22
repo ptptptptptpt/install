@@ -161,7 +161,7 @@ sed -i "s/__THE_WORK_IP__/${API_IP}/g" /etc/stackube/openstack/neutron-server/ne
 sed -i "s/__NEUTRON_KEYSTONE_PWD__/${KEYSTONE_NEUTRON_PWD}/g" /etc/stackube/openstack/neutron-server/neutron_lbaas.conf
 
 cp -f ${OS_CACERT} /etc/stackube/openstack/neutron-server/haproxy-ca.crt
-docker run -it --net host  \
+docker run --net host  \
     --name stackube_bootstrap_neutron  \
     -v /etc/stackube/openstack/neutron-server/:/var/lib/kolla/config_files/:ro  \
     -v /var/log/stackube/openstack:/var/log/kolla/:rw  \
@@ -177,7 +177,7 @@ docker rm stackube_bootstrap_neutron
 cp -f /etc/stackube/openstack/neutron-server/{neutron.conf,neutron_lbaas.conf,ml2_conf.ini,haproxy-ca.crt} \
       /etc/stackube/openstack/neutron-lbaas-agent/
 
-docker run -it --net host  \
+docker run --net host  \
     --name stackube_bootstrap_neutron_lbaas_agent  \
     -v /etc/stackube/openstack/neutron-lbaas-agent/:/var/lib/kolla/config_files/:ro  \
     -v /var/log/stackube/openstack:/var/log/kolla/:rw  \

@@ -21,7 +21,7 @@ sed -i "s/__PUBLIC_IP__/${CEPH_PUBLIC_IP}/g" /etc/stackube/openstack/ceph-mon/co
 
 mkdir -p /var/lib/stackube/openstack/ceph_mon_config  && \
 mkdir -p /var/lib/stackube/openstack/ceph_mon  && \
-docker run -it --net host  \
+docker run --net host  \
     --name stackube_bootstrap_ceph_mon  \
     -v /etc/stackube/openstack/ceph-mon/:/var/lib/kolla/config_files/:ro  \
     -v /var/log/stackube/openstack:/var/log/kolla/:rw  \
@@ -63,7 +63,7 @@ sed -i "s/__CLUSTER_IP__/${CEPH_CLUSTER_IP}/g" /etc/stackube/openstack/ceph-osd/
 
 mkdir -p ${CEPH_OSD_DATA_DIR} || exit 1
 
-docker run -it --net host  \
+docker run --net host  \
     --name stackube_bootstrap_ceph_osd  \
     -v /etc/stackube/openstack/ceph-osd/:/var/lib/kolla/config_files/:ro  \
     -v /var/log/stackube/openstack:/var/log/kolla/:rw  \

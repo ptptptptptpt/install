@@ -89,7 +89,7 @@ chmod 777 /var/log/stackube/openstack
 
 
 # bootstrap_service - Running Neutron bootstrap container
-docker run -it --net host  \
+docker run --net host  \
     --name stackube_bootstrap_neutron  \
     -v /etc/stackube/openstack/neutron-server/:/var/lib/kolla/config_files/:ro  \
     -v /var/log/stackube/openstack:/var/log/kolla/:rw  \

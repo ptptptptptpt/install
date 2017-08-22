@@ -29,7 +29,7 @@ sed -i "s/__LOCAL_IP__/${ML2_LOCAL_IP}/g" /etc/stackube/openstack/neutron-lbaas-
 sed -i "s/__KEYSTONE_API_IP__/${KEYSTONE_API_IP}/g" /etc/stackube/openstack/neutron-lbaas-agent/neutron_lbaas.conf
 sed -i "s/__NEUTRON_KEYSTONE_PWD__/${KEYSTONE_NEUTRON_PWD}/g" /etc/stackube/openstack/neutron-lbaas-agent/neutron_lbaas.conf
 
-docker run -it --net host  \
+docker run --net host  \
     --name stackube_bootstrap_neutron_lbaas_agent  \
     -v /etc/stackube/openstack/neutron-lbaas-agent/:/var/lib/kolla/config_files/:ro  \
     -v /var/log/stackube/openstack:/var/log/kolla/:rw  \

@@ -52,7 +52,7 @@ sed -i "s/__KEYSTONE_API_IP__/${KEYSTONE_API_IP}/g" /etc/stackube/openstack/keys
 
 
 # bootstrap_service
-docker run -it --net host  \
+docker run --net host  \
     --name stackube_bootstrap_keystone  \
     -v /etc/stackube/openstack/keystone/:/var/lib/kolla/config_files/:ro  \
     -v /var/log/stackube/openstack:/var/log/kolla/:rw  \
