@@ -13,6 +13,15 @@ set -o nounset
 set -o pipefail
 set -x
 
+
+## log dir
+mkdir -p /var/log/stackube/openstack
+chmod 777 /var/log/stackube/openstack
+
+## config files
+mkdir -p /etc/stackube/openstack
+cp -a ${programDir}/config_openstack/kolla-toolbox /etc/stackube/openstack/
+
 ## kolla-toolbox
 docker run -d  --net host  \
     --name stackube_kolla_toolbox  \

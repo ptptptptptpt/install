@@ -26,6 +26,7 @@ docker run -d \
     --restart unless-stopped \
     mariadb:5.5
 
+sleep 5
 
 exit 0
 
