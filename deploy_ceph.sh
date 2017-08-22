@@ -52,7 +52,7 @@ docker run -d  --net host  \
 
 sleep 5
 
-docker exec -it stackube_ceph_mon ceph -s
+docker exec stackube_ceph_mon ceph -s
 
 
 ## ceph-osd
@@ -94,7 +94,7 @@ docker run -d  --net host  \
 
 sleep 5
 
-docker exec -it stackube_ceph_mon ceph osd crush tree || exit 1
+docker exec stackube_ceph_mon ceph osd crush tree || exit 1
 
 
 ## host config

@@ -63,7 +63,7 @@ docker run -d  --net host  \
 sleep 10
 
 # config br-ex
-docker exec -it stackube_openvswitch_db /usr/local/bin/kolla_ensure_openvswitch_configured br-ex ${NEUTRON_EXT_IF}
+docker exec stackube_openvswitch_db /usr/local/bin/kolla_ensure_openvswitch_configured br-ex ${NEUTRON_EXT_IF}
 
 
 ## openvswitch-vswitchd
@@ -90,7 +90,7 @@ sleep 5
 
 ## register - Creating the Neutron service and endpoint
 for IF in 'admin' 'internal' 'public'; do 
-    docker exec -t stackube_kolla_toolbox /usr/bin/ansible localhost  -m kolla_keystone_service \
+    docker exec stackube_kolla_toolbox /usr/bin/ansible localhost  -m kolla_keystone_service \
         -a "service_name=neutron
             service_type=network
             description='Openstack Networking'
@@ -111,7 +111,7 @@ done
 
 
 ## register - Creating the Neutron project, user, and role
-docker exec -t stackube_kolla_toolbox /usr/bin/ansible localhost  -m kolla_keystone_user \
+docker exec stackube_kolla_toolbox /usr/bin/ansible localhost  -m kolla_keystone_user \
     -a "project=service
         user=neutron
         password=${KEYSTONE_NEUTRON_PWD}
@@ -129,7 +129,7 @@ docker exec -t stackube_kolla_toolbox /usr/bin/ansible localhost  -m kolla_keyst
 
 
 # bootstrap - Creating Neutron database
-docker exec -t stackube_kolla_toolbox /usr/bin/ansible localhost   -m mysql_db \
+docker exec stackube_kolla_toolbox /usr/bin/ansible localhost   -m mysql_db \
     -a "login_host=${API_IP}
         login_port=3306
         login_user=root
@@ -137,7 +137,7 @@ docker exec -t stackube_kolla_toolbox /usr/bin/ansible localhost   -m mysql_db \
         name=neutron"
 
 # bootstrap - Creating Neutron database user and setting permissions
-docker exec -t stackube_kolla_toolbox /usr/bin/ansible localhost   -m mysql_user \
+docker exec stackube_kolla_toolbox /usr/bin/ansible localhost   -m mysql_user \
     -a "login_host=${API_IP}
         login_port=3306
         login_user=root

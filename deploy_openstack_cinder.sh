@@ -25,7 +25,7 @@ source /etc/stackube/openstack/admin-openrc.sh  || exit 1
 ## v1
 for IF in 'admin' 'internal' 'public'; do
     echo ${IF}
-    docker exec -t stackube_kolla_toolbox /usr/bin/ansible localhost  -m kolla_keystone_service \
+    docker exec stackube_kolla_toolbox /usr/bin/ansible localhost  -m kolla_keystone_service \
         -a "service_name=cinder
             service_type=volume
             description='Openstack Block Storage'
@@ -49,7 +49,7 @@ for VER in 'v2' ; do
     echo "--- ${VER} ---"
     for IF in 'admin' 'internal' 'public'; do
         echo ${IF}
-        docker exec -t stackube_kolla_toolbox /usr/bin/ansible localhost  -m kolla_keystone_service \
+        docker exec stackube_kolla_toolbox /usr/bin/ansible localhost  -m kolla_keystone_service \
             -a "service_name=cinder${VER}
                 service_type=volume${VER}
                 description='Openstack Block Storage'
@@ -71,7 +71,7 @@ done
 
 
 ## register -  Creating the Cinder project, user, and role
-docker exec -t stackube_kolla_toolbox /usr/bin/ansible localhost  -m kolla_keystone_user \
+docker exec stackube_kolla_toolbox /usr/bin/ansible localhost  -m kolla_keystone_user \
     -a "project=service
         user=cinder
         password=${KEYSTONE_CINDER_PWD}
@@ -90,7 +90,7 @@ docker exec -t stackube_kolla_toolbox /usr/bin/ansible localhost  -m kolla_keyst
 
 
 # bootstrap - Creating Cinder database
-docker exec -t stackube_kolla_toolbox /usr/bin/ansible localhost   -m mysql_db \
+docker exec stackube_kolla_toolbox /usr/bin/ansible localhost   -m mysql_db \
     -a "login_host=${API_IP}
         login_port=3306
         login_user=root
@@ -98,7 +98,7 @@ docker exec -t stackube_kolla_toolbox /usr/bin/ansible localhost   -m mysql_db \
         name=cinder" || exit 1
 
 # bootstrap - Creating Cinder database user and setting permissions
-docker exec -t stackube_kolla_toolbox /usr/bin/ansible localhost   -m mysql_user \
+docker exec stackube_kolla_toolbox /usr/bin/ansible localhost   -m mysql_user \
     -a "login_host=${API_IP}
         login_port=3306
         login_user=root
@@ -163,10 +163,10 @@ sleep 5
 
 
 ## create osd pool for cinder volume service
-docker exec -it stackube_ceph_mon ceph osd pool create cinder 64 64 || exit 1
-docker exec -it stackube_ceph_mon ceph auth get-or-create client.cinder mon 'allow r' \
+docker exec stackube_ceph_mon ceph osd pool create cinder 64 64 || exit 1
+docker exec stackube_ceph_mon ceph auth get-or-create client.cinder mon 'allow r' \
                  osd 'allow class-read object_prefix rbd_children, allow rwx pool=cinder' || exit 1
-docker exec -it stackube_ceph_mon /bin/bash -c 'ceph auth get-or-create client.cinder | tee /etc/ceph/ceph.client.cinder.keyring' || exit 1
+docker exec stackube_ceph_mon /bin/bash -c 'ceph auth get-or-create client.cinder | tee /etc/ceph/ceph.client.cinder.keyring' || exit 1
 
 ## start_container - cinder-volume
 cp -f /var/lib/stackube/openstack/ceph_mon_config/{ceph.conf,ceph.client.cinder.keyring}  /etc/stackube/openstack/cinder-volume/  || exit 1

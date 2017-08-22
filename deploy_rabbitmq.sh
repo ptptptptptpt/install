@@ -25,12 +25,12 @@ docker run -d \
 
 sleep 5
 for i in 1 2 3 4 5; do
-    docker exec -it stackube_rabbitmq rabbitmqctl status && break
+    docker exec stackube_rabbitmq rabbitmqctl status && break
     sleep $i
 done
 sleep 5
 
-docker exec -it stackube_rabbitmq rabbitmqctl add_user openstack ${RABBITMQ_PWD} || exit 1
-docker exec -it stackube_rabbitmq rabbitmqctl set_permissions openstack ".*" ".*" ".*" || exit 1
+docker exec stackube_rabbitmq rabbitmqctl add_user openstack ${RABBITMQ_PWD} || exit 1
+docker exec stackube_rabbitmq rabbitmqctl set_permissions openstack ".*" ".*" ".*" || exit 1
 
 exit 0
