@@ -3,11 +3,10 @@
 # Dependencies:
 #
 # - ``OPENSTACK_ENDPOINT_IP``
-# - ``RABBITMQ_HOST``, ``RABBITMQ_PWD``
 # - ``MYSQL_HOST``, ``MYSQL_ROOT_PWD``
-# - ``KEYSTONE_ADMIN_PWD``, ``NEUTRON_API_IP``
+# - ``KEYSTONE_ADMIN_PWD``
 # - ``KEYSTONE_NEUTRON_PWD``, ``MYSQL_NEUTRON_PWD`` must be defined
-
+#
 
 programDir=`dirname $0`
 programDir=$(readlink -f $programDir)
@@ -23,7 +22,7 @@ set -x
 
 ## register - Creating the Neutron service and endpoint
 for IF in 'admin' 'internal' 'public'; do 
-    docker exec -t stackube_kolla_toolbox /usr/bin/ansible localhost  -m kolla_keystone_service \
+    docker exec stackube_kolla_toolbox /usr/bin/ansible localhost  -m kolla_keystone_service \
         -a "service_name=neutron
             service_type=network
             description='Openstack Networking'
@@ -44,7 +43,7 @@ done
 
 
 ## register - Creating the Neutron project, user, and role
-docker exec -t stackube_kolla_toolbox /usr/bin/ansible localhost  -m kolla_keystone_user \
+docker exec stackube_kolla_toolbox /usr/bin/ansible localhost  -m kolla_keystone_user \
     -a "project=service
         user=neutron
         password=${KEYSTONE_NEUTRON_PWD}
@@ -62,7 +61,7 @@ docker exec -t stackube_kolla_toolbox /usr/bin/ansible localhost  -m kolla_keyst
 
 
 # bootstrap - Creating Neutron database
-docker exec -t stackube_kolla_toolbox /usr/bin/ansible localhost   -m mysql_db \
+docker exec stackube_kolla_toolbox /usr/bin/ansible localhost   -m mysql_db \
     -a "login_host=${MYSQL_HOST}
         login_port=3306
         login_user=root
@@ -70,7 +69,7 @@ docker exec -t stackube_kolla_toolbox /usr/bin/ansible localhost   -m mysql_db \
         name=neutron"
 
 # bootstrap - Creating Neutron database user and setting permissions
-docker exec -t stackube_kolla_toolbox /usr/bin/ansible localhost   -m mysql_user \
+docker exec stackube_kolla_toolbox /usr/bin/ansible localhost   -m mysql_user \
     -a "login_host=${MYSQL_HOST}
         login_port=3306
         login_user=root
@@ -84,34 +83,9 @@ docker exec -t stackube_kolla_toolbox /usr/bin/ansible localhost   -m mysql_user
 
 
 
-
-
 ## log dir
 mkdir -p /var/log/stackube/openstack
 chmod 777 /var/log/stackube/openstack
-
-
-## config files
-mkdir -p /etc/stackube/openstack
-cp -a ${programDir}/config_openstack/neutron-server /etc/stackube/openstack/
-
-#sed -i "s/__THE_WORK_IP__/${API_IP}/g" /etc/stackube/openstack/neutron-server/ml2_conf.ini
-
-sed -i "s/__RABBITMQ_HOST__/${RABBITMQ_HOST}/g" /etc/stackube/openstack/neutron-server/neutron.conf
-sed -i "s/__RABBITMQ_PWD__/${RABBITMQ_PWD}/g" /etc/stackube/openstack/neutron-server/neutron.conf
-sed -i "s/__NEUTRON_API_IP__/${NEUTRON_API_IP}/g" /etc/stackube/openstack/neutron-server/neutron.conf
-sed -i "s/__MYSQL_HOST__/${MYSQL_HOST}/g" /etc/stackube/openstack/neutron-server/neutron.conf
-sed -i "s/__OPENSTACK_ENDPOINT_IP__/${OPENSTACK_ENDPOINT_IP}/g" /etc/stackube/openstack/neutron-server/neutron.conf
-sed -i "s/__NEUTRON_KEYSTONE_PWD__/${KEYSTONE_NEUTRON_PWD}/g" /etc/stackube/openstack/neutron-server/neutron.conf
-sed -i "s/__MYSQL_NEUTRON_PWD__/${MYSQL_NEUTRON_PWD}/g" /etc/stackube/openstack/neutron-server/neutron.conf
-
-#sed -i "s/__THE_WORK_IP__/${API_IP}/g" /etc/stackube/openstack/neutron-server/neutron_lbaas.conf
-#sed -i "s/__NEUTRON_KEYSTONE_PWD__/${KEYSTONE_NEUTRON_PWD}/g" /etc/stackube/openstack/neutron-server/neutron_lbaas.conf
-
-## for OS_CACERT
-source /etc/stackube/openstack/admin-openrc.sh 
-cp -f ${OS_CACERT} /etc/stackube/openstack/neutron-server/haproxy-ca.crt
-
 
 
 # bootstrap_service - Running Neutron bootstrap container

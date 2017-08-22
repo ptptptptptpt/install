@@ -2,12 +2,8 @@
 #
 # Dependencies:
 #
-# - ``OVSDB_IP``
-# - ``OPENSTACK_ENDPOINT_IP``
-# - ``RABBITMQ_HOST``, ``RABBITMQ_PWD``
-# - ``MYSQL_HOST``, ``MYSQL_ROOT_PWD``
-# - ``KEYSTONE_ADMIN_PWD``, ``NEUTRON_API_IP``
-# - ``KEYSTONE_NEUTRON_PWD``, ``MYSQL_NEUTRON_PWD`` must be defined
+# - ``OVSDB_IP``, ``ML2_LOCAL_IP``
+# - ``NEUTRON_EXT_IF`` must be defined
 #
 
 
@@ -42,6 +38,12 @@ docker run -d  --net host  \
     --restart unless-stopped \
     kolla/centos-binary-openvswitch-db-server:4.0.0
 
+sleep 5
+
+# config br
+docker exec stackube_openvswitch_db /usr/local/bin/kolla_ensure_openvswitch_configured br-ex ${NEUTRON_EXT_IF}
+
+
 ## openvswitch-vswitchd
 docker run -d  --net host  \
     --name stackube_openvswitch_vswitchd  \
@@ -61,16 +63,9 @@ sleep 5
 
 
 ## start_container - neutron-openvswitch-agent
-sed -i "s/__OVSDB_IP__/${OVSDB_IP}/g" /etc/stackube/openstack/neutron-server/ml2_conf.ini
-sed -i "s/__LOCAL_IP__/${ML2_LOCAL_IP}/g" /etc/stackube/openstack/neutron-server/ml2_conf.ini
+sed -i "s/__OVSDB_IP__/${OVSDB_IP}/g" /etc/stackube/openstack/neutron-openvswitch-agent/ml2_conf.ini
+sed -i "s/__LOCAL_IP__/${ML2_LOCAL_IP}/g" /etc/stackube/openstack/neutron-openvswitch-agent/ml2_conf.ini
 
-sed -i "s/__RABBITMQ_HOST__/${RABBITMQ_HOST}/g" /etc/stackube/openstack/neutron-server/neutron.conf
-sed -i "s/__RABBITMQ_PWD__/${RABBITMQ_PWD}/g" /etc/stackube/openstack/neutron-server/neutron.conf
-sed -i "s/__NEUTRON_API_IP__/${NEUTRON_API_IP}/g" /etc/stackube/openstack/neutron-server/neutron.conf
-sed -i "s/__MYSQL_HOST__/${MYSQL_HOST}/g" /etc/stackube/openstack/neutron-server/neutron.conf
-sed -i "s/__OPENSTACK_ENDPOINT_IP__/${OPENSTACK_ENDPOINT_IP}/g" /etc/stackube/openstack/neutron-server/neutron.conf
-sed -i "s/__NEUTRON_KEYSTONE_PWD__/${KEYSTONE_NEUTRON_PWD}/g" /etc/stackube/openstack/neutron-server/neutron.conf
-sed -i "s/__MYSQL_NEUTRON_PWD__/${MYSQL_NEUTRON_PWD}/g" /etc/stackube/openstack/neutron-server/neutron.conf
 
 docker run -d  --net host  \
     --name stackube_neutron_openvswitch_agent  \

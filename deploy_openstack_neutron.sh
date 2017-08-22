@@ -2,9 +2,13 @@
 #
 # Dependencies:
 #
-# - ``API_IP``, ``RABBITMQ_PWD``
-# - ``NEUTRON_EXT_IF``, ``KEYSTONE_ADMIN_PWD``
-# - ``KEYSTONE_NEUTRON_PWD``, ``MYSQL_NEUTRON_PWD``must be defined
+# - ``OVSDB_IP``
+# - ``OPENSTACK_ENDPOINT_IP``
+# - ``RABBITMQ_HOST``, ``RABBITMQ_PWD``
+# - ``MYSQL_HOST``, ``MYSQL_ROOT_PWD``
+# - ``KEYSTONE_ADMIN_PWD``, ``NEUTRON_API_IP``
+# - ``KEYSTONE_NEUTRON_PWD``, ``MYSQL_NEUTRON_PWD``
+# - ``NEUTRON_EXT_IF`` must be defined
 #
 
 
@@ -13,12 +17,18 @@ programDir=$(readlink -f $programDir)
 parentDir="$(dirname $programDir)"
 programDirBaseName=$(basename $programDir)
 
+set -o errexit
+set -o nounset
+set -o pipefail
 set -x
 
+## log dir
+mkdir -p /var/log/stackube/openstack
+chmod 777 /var/log/stackube/openstack
 
 
 ## for OS_CACERT
-source /etc/stackube/openstack/admin-openrc.sh  || exit 1
+source /etc/stackube/openstack/admin-openrc.sh
 
 
 ## sysctl
@@ -35,8 +45,8 @@ sysctl -p
 
 
 ## openvswitch-db-server
-sed -i "s/__THE_WORK_IP__/${API_IP}/g" /etc/stackube/openstack/openvswitch-db-server/config.json  || exit 1
-mkdir -p /var/lib/stackube/openstack/openvswitch  || exit 1
+sed -i "s/__THE_WORK_IP__/${API_IP}/g" /etc/stackube/openstack/openvswitch-db-server/config.json
+mkdir -p /var/lib/stackube/openstack/openvswitch
 docker run -d  --net host  \
     --name stackube_openvswitch_db  \
     -v /etc/stackube/openstack/openvswitch-db-server/:/var/lib/kolla/config_files/:ro  \
@@ -48,12 +58,12 @@ docker run -d  --net host  \
     -e "KOLLA_CONFIG_STRATEGY=COPY_ALWAYS" \
     \
     --restart unless-stopped \
-    kolla/centos-binary-openvswitch-db-server:4.0.0  || exit 1
+    kolla/centos-binary-openvswitch-db-server:4.0.0
 
 sleep 10
 
 # config br-ex
-docker exec -it stackube_openvswitch_db /usr/local/bin/kolla_ensure_openvswitch_configured br-ex ${NEUTRON_EXT_IF}  || exit 1
+docker exec -it stackube_openvswitch_db /usr/local/bin/kolla_ensure_openvswitch_configured br-ex ${NEUTRON_EXT_IF}
 
 
 ## openvswitch-vswitchd
@@ -69,7 +79,7 @@ docker run -d  --net host  \
     \
     --restart unless-stopped \
     --privileged  \
-    kolla/centos-binary-openvswitch-vswitchd:4.0.0 || exit 1
+    kolla/centos-binary-openvswitch-vswitchd:4.0.0
 
 sleep 5
 
@@ -96,7 +106,7 @@ for IF in 'admin' 'internal' 'public'; do
                'password': '${KEYSTONE_ADMIN_PWD}',
                'project_name': 'admin',
                'domain_name': 'default' } 
-            }"  || exit 1
+            }"
 done
 
 
@@ -115,7 +125,7 @@ docker exec -t stackube_kolla_toolbox /usr/bin/ansible localhost  -m kolla_keyst
            'password': '${KEYSTONE_ADMIN_PWD}',
            'project_name': 'admin',
            'domain_name': 'default' } 
-        }"  || exit 1
+        }"
 
 
 # bootstrap - Creating Neutron database
@@ -124,7 +134,7 @@ docker exec -t stackube_kolla_toolbox /usr/bin/ansible localhost   -m mysql_db \
         login_port=3306
         login_user=root
         login_password=${MYSQL_ROOT_PWD}
-        name=neutron" || exit 1
+        name=neutron"
 
 # bootstrap - Creating Neutron database user and setting permissions
 docker exec -t stackube_kolla_toolbox /usr/bin/ansible localhost   -m mysql_user \
@@ -136,28 +146,28 @@ docker exec -t stackube_kolla_toolbox /usr/bin/ansible localhost   -m mysql_user
         password=${MYSQL_NEUTRON_PWD}
         host=%
         priv='neutron.*:ALL'
-        append_privs=yes" || exit 1
+        append_privs=yes"
 
 
 # bootstrap_service - Running Neutron bootstrap container
-sed -i "s/__THE_WORK_IP__/${API_IP}/g" /etc/stackube/openstack/neutron-server/ml2_conf.ini || exit 1
+sed -i "s/__THE_WORK_IP__/${API_IP}/g" /etc/stackube/openstack/neutron-server/ml2_conf.ini
 
-sed -i "s/__THE_WORK_IP__/${API_IP}/g" /etc/stackube/openstack/neutron-server/neutron.conf || exit 1
-sed -i "s/__NEUTRON_KEYSTONE_PWD__/${KEYSTONE_NEUTRON_PWD}/g" /etc/stackube/openstack/neutron-server/neutron.conf || exit 1
-sed -i "s/__MYSQL_NEUTRON_PWD__/${MYSQL_NEUTRON_PWD}/g" /etc/stackube/openstack/neutron-server/neutron.conf || exit 1
-sed -i "s/__RABBITMQ_PWD__/${RABBITMQ_PWD}/g" /etc/stackube/openstack/neutron-server/neutron.conf || exit 1
+sed -i "s/__THE_WORK_IP__/${API_IP}/g" /etc/stackube/openstack/neutron-server/neutron.conf
+sed -i "s/__NEUTRON_KEYSTONE_PWD__/${KEYSTONE_NEUTRON_PWD}/g" /etc/stackube/openstack/neutron-server/neutron.conf
+sed -i "s/__MYSQL_NEUTRON_PWD__/${MYSQL_NEUTRON_PWD}/g" /etc/stackube/openstack/neutron-server/neutron.conf
+sed -i "s/__RABBITMQ_PWD__/${RABBITMQ_PWD}/g" /etc/stackube/openstack/neutron-server/neutron.conf
 
-sed -i "s/__THE_WORK_IP__/${API_IP}/g" /etc/stackube/openstack/neutron-server/neutron_lbaas.conf || exit 1
-sed -i "s/__NEUTRON_KEYSTONE_PWD__/${KEYSTONE_NEUTRON_PWD}/g" /etc/stackube/openstack/neutron-server/neutron_lbaas.conf || exit 1
+sed -i "s/__THE_WORK_IP__/${API_IP}/g" /etc/stackube/openstack/neutron-server/neutron_lbaas.conf
+sed -i "s/__NEUTRON_KEYSTONE_PWD__/${KEYSTONE_NEUTRON_PWD}/g" /etc/stackube/openstack/neutron-server/neutron_lbaas.conf
 
-cp -f ${OS_CACERT} /etc/stackube/openstack/neutron-server/haproxy-ca.crt || exit 1
+cp -f ${OS_CACERT} /etc/stackube/openstack/neutron-server/haproxy-ca.crt
 docker run -it --net host  \
     --name stackube_bootstrap_neutron  \
     -v /etc/stackube/openstack/neutron-server/:/var/lib/kolla/config_files/:ro  \
     -v /var/log/stackube/openstack:/var/log/kolla/:rw  \
     -e "KOLLA_BOOTSTRAP="  \
     -e "KOLLA_CONFIG_STRATEGY=COPY_ALWAYS" \
-    kolla/centos-binary-neutron-server:4.0.0 || exit 1
+    kolla/centos-binary-neutron-server:4.0.0
 
 sleep 2
 docker rm stackube_bootstrap_neutron
@@ -165,7 +175,7 @@ docker rm stackube_bootstrap_neutron
 
 # bootstrap_service - Running Neutron lbaas bootstrap container
 cp -f /etc/stackube/openstack/neutron-server/{neutron.conf,neutron_lbaas.conf,ml2_conf.ini,haproxy-ca.crt} \
-      /etc/stackube/openstack/neutron-lbaas-agent/  || exit 1
+      /etc/stackube/openstack/neutron-lbaas-agent/
 
 docker run -it --net host  \
     --name stackube_bootstrap_neutron_lbaas_agent  \
@@ -178,7 +188,7 @@ docker run -it --net host  \
     -e "KOLLA_CONFIG_STRATEGY=COPY_ALWAYS" \
     \
     --privileged  \
-    kolla/centos-binary-neutron-lbaas-agent:4.0.0 || exit 1
+    kolla/centos-binary-neutron-lbaas-agent:4.0.0
 
 sleep 2
 docker rm stackube_bootstrap_neutron_lbaas_agent
@@ -194,12 +204,12 @@ docker run -d  --net host  \
     -e "KOLLA_CONFIG_STRATEGY=COPY_ALWAYS" \
     \
     --restart unless-stopped \
-    kolla/centos-binary-neutron-server:4.0.0 || exit 1
+    kolla/centos-binary-neutron-server:4.0.0
 
 
 ## start_container - neutron-openvswitch-agent
 cp -f /etc/stackube/openstack/neutron-server/{neutron.conf,ml2_conf.ini,haproxy-ca.crt} \
-      /etc/stackube/openstack/neutron-openvswitch-agent/  || exit 1
+      /etc/stackube/openstack/neutron-openvswitch-agent/
 
 docker run -d  --net host  \
     --name stackube_neutron_openvswitch_agent  \
@@ -213,12 +223,12 @@ docker run -d  --net host  \
     \
     --restart unless-stopped \
     --privileged  \
-    kolla/centos-binary-neutron-openvswitch-agent:4.0.0  || exit 1
+    kolla/centos-binary-neutron-openvswitch-agent:4.0.0
 
 
 ## start_container - neutron-l3-agent
 cp -f /etc/stackube/openstack/neutron-server/{neutron.conf,ml2_conf.ini,haproxy-ca.crt} \
-      /etc/stackube/openstack/neutron-l3-agent/  || exit 1
+      /etc/stackube/openstack/neutron-l3-agent/
 
 docker run -d  --net host  \
     --name stackube_neutron_l3_agent  \
@@ -231,12 +241,12 @@ docker run -d  --net host  \
     \
     --restart unless-stopped \
     --privileged  \
-    kolla/centos-binary-neutron-l3-agent:4.0.0 || exit 1
+    kolla/centos-binary-neutron-l3-agent:4.0.0
 
 
 ## start_container - neutron-dhcp-agent
 cp -f /etc/stackube/openstack/neutron-server/{neutron.conf,ml2_conf.ini,haproxy-ca.crt} \
-      /etc/stackube/openstack/neutron-dhcp-agent/ || exit 1
+      /etc/stackube/openstack/neutron-dhcp-agent/
 
 docker run -d  --net host  \
     --name stackube_neutron_dhcp_agent  \
@@ -249,7 +259,7 @@ docker run -d  --net host  \
     \
     --restart unless-stopped \
     --privileged  \
-    kolla/centos-binary-neutron-dhcp-agent:4.0.0  || exit 1
+    kolla/centos-binary-neutron-dhcp-agent:4.0.0
 
 
 ## start_container - neutron-lbaas-agent
@@ -265,7 +275,7 @@ docker run -d  --net host  \
     \
     --restart unless-stopped \
     --privileged  \
-    kolla/centos-binary-neutron-lbaas-agent:4.0.0 || exit 1
+    kolla/centos-binary-neutron-lbaas-agent:4.0.0
 
 
 exit 0
