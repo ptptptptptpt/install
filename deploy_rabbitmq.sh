@@ -10,6 +10,8 @@ programDir=$(readlink -f $programDir)
 parentDir="$(dirname $programDir)"
 programDirBaseName=$(basename $programDir)
 
+set -o nounset
+set -o pipefail
 set -x
 
 ## rabbitmq 

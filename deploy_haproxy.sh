@@ -2,7 +2,10 @@
 #
 # Dependencies:
 #
-# - ``API_IP`` must be defined
+# - ``OPENSTACK_ENDPOINT_IP``
+# - ``KEYSTONE_API_IP``
+# - ``NEUTRON_API_IP``
+# - ``CINDER_API_IP``  must be defined
 #
 
 programDir=`dirname $0`
@@ -17,11 +20,11 @@ set -x
 
 
 ## make certificates
-HOST_IP=${API_IP}
-SERVICE_HOST=${API_IP}
-SERVICE_IP=${API_IP}
-source ${programDir}/lib_tls.sh
+HOST_IP=${OPENSTACK_ENDPOINT_IP}
+SERVICE_HOST=${OPENSTACK_ENDPOINT_IP}
+SERVICE_IP=${OPENSTACK_ENDPOINT_IP}
 DATA_DIR='/etc/stackube/openstack/certificates'
+source ${programDir}/lib_tls.sh
 mkdir -p ${DATA_DIR}
 init_CA
 init_cert
@@ -35,7 +38,10 @@ chmod 777 /var/log/stackube/openstack
 ## config files
 mkdir -p /etc/stackube/openstack
 cp -a ${programDir}/config_openstack/haproxy /etc/stackube/openstack/
-sed -i "s/__API_IP__/${API_IP}/g" /etc/stackube/openstack/haproxy/haproxy.cfg
+sed -i "s/__OPENSTACK_ENDPOINT_IP__/${OPENSTACK_ENDPOINT_IP}/g" /etc/stackube/openstack/haproxy/haproxy.cfg
+sed -i "s/__KEYSTONE_API_IP__/${KEYSTONE_API_IP}/g" /etc/stackube/openstack/haproxy/haproxy.cfg
+sed -i "s/__NEUTRON_API_IP__/${NEUTRON_API_IP}/g" /etc/stackube/openstack/haproxy/haproxy.cfg
+sed -i "s/__CINDER_API_IP__/${CINDER_API_IP}/g" /etc/stackube/openstack/haproxy/haproxy.cfg
 # STACKUBE_CERT defined in lib_tls.sh
 cat ${STACKUBE_CERT} > /etc/stackube/openstack/haproxy/haproxy.pem
 

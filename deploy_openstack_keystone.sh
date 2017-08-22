@@ -2,7 +2,8 @@
 #
 # Dependencies:
 #
-# - ``API_IP``, ``MYSQL_HOST``, ``MYSQL_ROOT_PWD``
+# - ``OPENSTACK_ENDPOINT_IP``, ``KEYSTONE_API_IP``
+# - ``MYSQL_HOST``, ``MYSQL_ROOT_PWD``
 # - ``MYSQL_KEYSTONE_PWD``, ``KEYSTONE_ADMIN_PWD``  must be defined
 #
 
@@ -47,7 +48,7 @@ mkdir -p /etc/stackube/openstack
 cp -a ${programDir}/config_openstack/keystone /etc/stackube/openstack/
 sed -i "s/__MYSQL_HOST__/${MYSQL_HOST}/g" /etc/stackube/openstack/keystone/keystone.conf
 sed -i "s/__MYSQL_KWYSTONE_PWD__/${MYSQL_KEYSTONE_PWD}/g" /etc/stackube/openstack/keystone/keystone.conf
-sed -i "s/__API_IP__/${API_IP}/g" /etc/stackube/openstack/keystone/wsgi-keystone.conf
+sed -i "s/__KEYSTONE_API_IP__/${KEYSTONE_API_IP}/g" /etc/stackube/openstack/keystone/wsgi-keystone.conf
 
 
 # bootstrap_service
@@ -74,14 +75,14 @@ sleep 10
 
 # register
 docker exec -it stackube_keystone kolla_keystone_bootstrap admin ${KEYSTONE_ADMIN_PWD} admin admin \
-    https://${API_IP}:35358/v3 \
-    https://${API_IP}:5001/v3 \
-    https://${API_IP}:5001/v3 \
+    https://${OPENSTACK_ENDPOINT_IP}:35358/v3 \
+    https://${OPENSTACK_ENDPOINT_IP}:5001/v3 \
+    https://${OPENSTACK_ENDPOINT_IP}:5001/v3 \
     RegionOne
 
 docker exec -it stackube_kolla_toolbox /usr/bin/ansible localhost -m os_keystone_role  -a "name=_member_  auth='{{ openstack_keystone_auth }}' verify=False"  \
     -e "{'openstack_keystone_auth': {
-           'auth_url': 'https://${API_IP}:35358/v3',
+           'auth_url': 'https://${OPENSTACK_ENDPOINT_IP}:35358/v3',
            'username': 'admin',
            'password': '${KEYSTONE_ADMIN_PWD}',
            'project_name': 'admin',
@@ -96,12 +97,11 @@ export OS_PROJECT_NAME=admin
 export OS_TENANT_NAME=admin
 export OS_USERNAME=admin
 export OS_PASSWORD=${KEYSTONE_ADMIN_PWD}
-export OS_AUTH_URL=https://${API_IP}:35358/v3
+export OS_AUTH_URL=https://${OPENSTACK_ENDPOINT_IP}:35358/v3
 export OS_INTERFACE=internal
 export OS_IDENTITY_API_VERSION=3
-export OS_CACERT=${INT_CA_DIR}/ca-chain.pem
+export OS_CACERT=/etc/stackube/openstack/certificates/CA/int-ca/ca-chain.pem
 EOF
-
 
 exit 0
 

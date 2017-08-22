@@ -28,7 +28,7 @@ docker run -d  --net host  \
     --privileged  \
     kolla/centos-binary-kolla-toolbox:4.0.0
 
-sleep 10
+sleep 5
 
 
 exit 0
