@@ -18,23 +18,23 @@ set -x
 
 ## 控制节点
 
-/bin/bash ${programDir}/openstack/deploy_kolla_toolbox.sh
+/bin/bash ${programDir}/openstack/deploy_openstack_kolla_toolbox.sh
 
 
 export MYSQL_ROOT_PWD='mysql123'
-/bin/bash ${programDir}/openstack/deploy_mariadb.sh
+/bin/bash ${programDir}/openstack/deploy_openstack_mariadb.sh
 
 
 
 export RABBITMQ_PWD='rabbitl123'
-/bin/bash ${programDir}/openstack/deploy_rabbitmq.sh
+/bin/bash ${programDir}/openstack/deploy_openstack_rabbitmq.sh
 
 
 export OPENSTACK_ENDPOINT_IP='10.100.143.135'
 export KEYSTONE_API_IP='10.100.143.135'
 export NEUTRON_API_IP='10.100.143.135'
 export CINDER_API_IP='10.100.143.135'
-/bin/bash ${programDir}/openstack/deploy_haproxy.sh
+/bin/bash ${programDir}/openstack/deploy_openstack_haproxy.sh
 
 
 
@@ -212,30 +212,98 @@ done
 
 
 
-exit 0
+
+
+## cinder api
+export MYSQL_ROOT_PWD='mysql123'
+export KEYSTONE_ADMIN_PWD='keystoneadminl123'
+
+export OPENSTACK_ENDPOINT_IP='10.100.143.135'
+export RABBITMQ_HOST='10.100.143.135'
+export RABBITMQ_PWD='rabbitl123'
+export MYSQL_HOST='10.100.143.135'
+
+export CINDER_API_IP='10.100.143.135'
+export KEYSTONE_CINDER_PWD='keystoneCinder123'
+export MYSQL_CINDER_PWD='mysqlnCinder123'
+
+
+function process_cinder_conf {
+    local cinderConfigFile="$1"
+    sed -i "s/__CINDER_API_IP__/${CINDER_API_IP}/g" ${cinderConfigFile}
+    sed -i "s/__RABBITMQ_HOST__/${RABBITMQ_HOST}/g" ${cinderConfigFile}
+    sed -i "s/__RABBITMQ_PWD__/${RABBITMQ_PWD}/g" ${cinderConfigFile}
+    sed -i "s/__MYSQL_CINDER_PWD__/${MYSQL_CINDER_PWD}/g" ${cinderConfigFile}
+    sed -i "s/__MYSQL_HOST__/${MYSQL_HOST}/g" ${cinderConfigFile}
+    sed -i "s/__OPENSTACK_ENDPOINT_IP__/${OPENSTACK_ENDPOINT_IP}/g" ${cinderConfigFile}
+    sed -i "s/__KEYSTONE_CINDER_PWD__/${KEYSTONE_CINDER_PWD}/g" ${cinderConfigFile}
+}
+
+
+## config files
+mkdir -p /etc/stackube/openstack
+cp -a ${programDir}/openstack/config_openstack/cinder-api /etc/stackube/openstack/
+process_cinder_conf /etc/stackube/openstack/cinder-api/cinder.conf
+## for OS_CACERT
+source /etc/stackube/openstack/admin-openrc.sh 
+cp -f ${OS_CACERT} /etc/stackube/openstack/cinder-api/haproxy-ca.crt
+
+/bin/bash ${programDir}/openstack/deploy_openstack_cinder_api.sh
+
+
+
+
+## cinder scheduler
+mkdir -p /etc/stackube/openstack
+cp -a ${programDir}/openstack/config_openstack/cinder-scheduler /etc/stackube/openstack/
+cp -f /etc/stackube/openstack/cinder-api/cinder.conf  /etc/stackube/openstack/cinder-scheduler/
+
+/bin/bash ${programDir}/openstack/deploy_openstack_cinder_scheduler.sh
+
+
+
+
+## cinder volume
+
+## create osd pool for cinder volume service
+docker exec stackube_ceph_mon ceph osd pool create cinder 128 128
+docker exec stackube_ceph_mon ceph auth get-or-create client.cinder mon 'allow r' \
+                 osd 'allow class-read object_prefix rbd_children, allow rwx pool=cinder'
+docker exec stackube_ceph_mon /bin/bash -c 'ceph auth get-or-create client.cinder | tee /etc/ceph/ceph.client.cinder.keyring'
+
+(
+set -x
+
+for IP in '10.100.143.135'  ; do 
+    ssh root@${IP} 'mkdir -p /etc/stackube/openstack /tmp/stackube_install'
+    scp -r ${programDir}/openstack/config_openstack/cinder-volume root@${IP}:/etc/stackube/openstack/
+    scp -r /etc/stackube/openstack/cinder-api/cinder.conf \
+           /var/lib/stackube/ceph/ceph_mon_config/{ceph.conf,ceph.client.cinder.keyring}  root@${IP}:/etc/stackube/openstack/cinder-volume/
+
+    scp ${programDir}/openstack/deploy_openstack_cinder_volume.sh root@${IP}:/tmp/stackube_install/
+    ssh root@${IP} "/bin/bash /tmp/stackube_install/deploy_openstack_cinder_volume.sh"
+done
+)
+
+
 
 ### 计算节点 host需要安装ceph，供 kubelet 使用
-yum install centos-release-openstack-ocata.noarch -y
-yum install ceph -y 
-systemctl disable ceph.target ceph-mds.target ceph-mon.target ceph-osd.target
-cp -f /var/lib/stackube/ceph/ceph_mon_config/* /etc/ceph/
-ceph -s
+(
+set -x
+
+for IP in '10.100.143.135'  ; do
+    ssh root@${IP} "yum install centos-release-openstack-ocata.noarch -y"
+    ssh root@${IP} "yum install ceph -y"
+    ssh root@${IP} "systemctl disable ceph.target ceph-mds.target ceph-mon.target ceph-osd.target"
+    scp -r /var/lib/stackube/ceph/ceph_mon_config/*  root@${IP}:/etc/ceph/
+    ssh root@${IP} "ceph -s"
+    ssh root@${IP} "rbd -p cinder --id cinder --keyring=/etc/ceph/ceph.client.cinder.keyring ls"
+done
+)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+source /etc/stackube/openstack/admin-openrc.sh 
+openstack volume service list
 
 
 
