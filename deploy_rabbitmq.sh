@@ -17,7 +17,7 @@ set -x
 ## rabbitmq 
 mkdir -p /var/lib/stackube/openstack/rabbitmq  && \
 docker run -d \
-    --name stackube_rabbitmq \
+    --name stackube_openstack_rabbitmq \
     --net host  \
     -v /var/lib/stackube/openstack/rabbitmq:/var/lib/rabbitmq \
     --restart unless-stopped \
@@ -25,12 +25,12 @@ docker run -d \
 
 sleep 5
 for i in 1 2 3 4 5; do
-    docker exec stackube_rabbitmq rabbitmqctl status && break
+    docker exec stackube_openstack_rabbitmq rabbitmqctl status && break
     sleep $i
 done
 sleep 5
 
-docker exec stackube_rabbitmq rabbitmqctl add_user openstack ${RABBITMQ_PWD} || exit 1
-docker exec stackube_rabbitmq rabbitmqctl set_permissions openstack ".*" ".*" ".*" || exit 1
+docker exec stackube_openstack_rabbitmq rabbitmqctl add_user openstack ${RABBITMQ_PWD} || exit 1
+docker exec stackube_openstack_rabbitmq rabbitmqctl set_permissions openstack ".*" ".*" ".*" || exit 1
 
 exit 0

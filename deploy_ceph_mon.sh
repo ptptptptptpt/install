@@ -22,8 +22,9 @@ set -x
 mkdir -p /var/log/stackube/ceph
 chmod 777 /var/log/stackube/ceph
 
-
-## ceph-mon
+## config files
+mkdir -p /etc/stackube/ceph
+cp -a ${programDir}/config_ceph/keystone /etc/stackube/ceph/
 sed -i "s/__FSID__/${CEPH_FSID}/g" /etc/stackube/ceph/ceph-mon/ceph.conf
 sed -i "s/__PUBLIC_IP__/${CEPH_PUBLIC_IP}/g" /etc/stackube/ceph/ceph-mon/ceph.conf
 sed -i "s/__PUBLIC_IP__/${CEPH_PUBLIC_IP}/g" /etc/stackube/ceph/ceph-mon/config.json

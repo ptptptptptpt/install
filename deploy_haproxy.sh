@@ -48,7 +48,7 @@ cat ${STACKUBE_CERT} > /etc/stackube/openstack/haproxy/haproxy.pem
 
 ## run
 docker run -d  --net host  \
-    --name stackube_haproxy  \
+    --name stackube_openstack_haproxy  \
     -v /etc/stackube/openstack/haproxy/:/var/lib/kolla/config_files/:ro  \
     -v /var/log/stackube/openstack:/var/log/kolla/:rw  \
     \

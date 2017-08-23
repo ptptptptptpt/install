@@ -26,7 +26,7 @@ chmod 777 /var/log/stackube/openstack
 sed -i "s/__OVSDB_IP__/${OVSDB_IP}/g" /etc/stackube/openstack/openvswitch-db-server/config.json
 mkdir -p /var/lib/stackube/openstack/openvswitch
 docker run -d  --net host  \
-    --name stackube_openvswitch_db  \
+    --name stackube_openstack_openvswitch_db  \
     -v /etc/stackube/openstack/openvswitch-db-server/:/var/lib/kolla/config_files/:ro  \
     -v /var/log/stackube/openstack:/var/log/kolla/:rw  \
     -v /var/lib/stackube/openstack/openvswitch/:/var/lib/openvswitch/:rw  \
@@ -41,12 +41,12 @@ docker run -d  --net host  \
 sleep 5
 
 # config br
-docker exec stackube_openvswitch_db /usr/local/bin/kolla_ensure_openvswitch_configured br-ex ${NEUTRON_EXT_IF}
+docker exec stackube_openstack_openvswitch_db /usr/local/bin/kolla_ensure_openvswitch_configured br-ex ${NEUTRON_EXT_IF}
 
 
 ## openvswitch-vswitchd
 docker run -d  --net host  \
-    --name stackube_openvswitch_vswitchd  \
+    --name stackube_openstack_openvswitch_vswitchd  \
     -v /etc/stackube/openstack/openvswitch-vswitchd/:/var/lib/kolla/config_files/:ro  \
     -v /var/log/stackube/openstack:/var/log/kolla/:rw  \
     -v /run:/run:shared  \
@@ -68,7 +68,7 @@ sed -i "s/__LOCAL_IP__/${ML2_LOCAL_IP}/g" /etc/stackube/openstack/neutron-openvs
 
 
 docker run -d  --net host  \
-    --name stackube_neutron_openvswitch_agent  \
+    --name stackube_openstack_neutron_openvswitch_agent  \
     -v /etc/stackube/openstack/neutron-openvswitch-agent/:/var/lib/kolla/config_files/:ro  \
     -v /var/log/stackube/openstack:/var/log/kolla/:rw  \
     -v /run:/run:shared  \

@@ -30,7 +30,7 @@ sed -i "s/__KEYSTONE_API_IP__/${KEYSTONE_API_IP}/g" /etc/stackube/openstack/neut
 sed -i "s/__NEUTRON_KEYSTONE_PWD__/${KEYSTONE_NEUTRON_PWD}/g" /etc/stackube/openstack/neutron-lbaas-agent/neutron_lbaas.conf
 
 docker run --net host  \
-    --name stackube_bootstrap_neutron_lbaas_agent  \
+    --name stackube_openstack_bootstrap_neutron_lbaas_agent  \
     -v /etc/stackube/openstack/neutron-lbaas-agent/:/var/lib/kolla/config_files/:ro  \
     -v /var/log/stackube/openstack:/var/log/kolla/:rw  \
     -v /run/netns/:/run/netns/:shared  \
@@ -43,12 +43,12 @@ docker run --net host  \
     kolla/centos-binary-neutron-lbaas-agent:4.0.0
 
 sleep 2
-docker rm stackube_bootstrap_neutron_lbaas_agent
+docker rm stackube_openstack_bootstrap_neutron_lbaas_agent
 
 
 ## start_container - neutron-lbaas-agent
 docker run -d  --net host  \
-    --name stackube_neutron_lbaas_agent  \
+    --name stackube_openstack_neutron_lbaas_agent  \
     -v /etc/stackube/openstack/neutron-lbaas-agent/:/var/lib/kolla/config_files/:ro  \
     -v /var/log/stackube/openstack:/var/log/kolla/:rw  \
     -v /run/netns/:/run/netns/:shared  \

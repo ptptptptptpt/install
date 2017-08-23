@@ -19,7 +19,7 @@ set -x
 ## mariadb
 mkdir -p /var/lib/stackube/openstack/mariadb  && \
 docker run -d \
-    --name stackube_mariadb \
+    --name stackube_openstack_mariadb \
     --net host  \
     -e MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PWD} \
     -v /var/lib/stackube/openstack/mariadb:/var/lib/mysql \

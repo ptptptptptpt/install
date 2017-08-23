@@ -19,14 +19,14 @@ set -x
 
 
 ## create db
-docker exec stackube_kolla_toolbox /usr/bin/ansible localhost -m mysql_db  \
+docker exec stackube_openstack_kolla_toolbox /usr/bin/ansible localhost -m mysql_db  \
     -a "login_host=${MYSQL_HOST}
         login_port=3306
         login_user=root
         login_password=${MYSQL_ROOT_PWD}
         name=keystone"
 
-docker exec stackube_kolla_toolbox /usr/bin/ansible localhost -m mysql_user  \
+docker exec stackube_openstack_kolla_toolbox /usr/bin/ansible localhost -m mysql_user  \
     -a "login_host=${MYSQL_HOST}
         login_port=3306
         login_user=root
@@ -53,17 +53,17 @@ sed -i "s/__KEYSTONE_API_IP__/${KEYSTONE_API_IP}/g" /etc/stackube/openstack/keys
 
 # bootstrap_service
 docker run --net host  \
-    --name stackube_bootstrap_keystone  \
+    --name stackube_openstack_bootstrap_keystone  \
     -v /etc/stackube/openstack/keystone/:/var/lib/kolla/config_files/:ro  \
     -v /var/log/stackube/openstack:/var/log/kolla/:rw  \
     -e "KOLLA_BOOTSTRAP="  \
     -e "KOLLA_CONFIG_STRATEGY=COPY_ALWAYS" \
     kolla/centos-binary-keystone:4.0.0
 
-docker rm stackube_bootstrap_keystone
+docker rm stackube_openstack_bootstrap_keystone
 
 docker run -d  --net host  \
-    --name stackube_keystone  \
+    --name stackube_openstack_keystone  \
     -v /etc/stackube/openstack/keystone/:/var/lib/kolla/config_files/:ro  \
     -v /var/log/stackube/openstack:/var/log/kolla/:rw  \
     -e "KOLLA_SERVICE_NAME=keystone"  \
@@ -74,13 +74,13 @@ docker run -d  --net host  \
 sleep 10
 
 # register
-docker exec stackube_keystone kolla_keystone_bootstrap admin ${KEYSTONE_ADMIN_PWD} admin admin \
+docker exec stackube_openstack_keystone kolla_keystone_bootstrap admin ${KEYSTONE_ADMIN_PWD} admin admin \
     https://${OPENSTACK_ENDPOINT_IP}:35358/v3 \
     https://${OPENSTACK_ENDPOINT_IP}:5001/v3 \
     https://${OPENSTACK_ENDPOINT_IP}:5001/v3 \
     RegionOne
 
-docker exec stackube_kolla_toolbox /usr/bin/ansible localhost -m os_keystone_role  -a "name=_member_  auth='{{ openstack_keystone_auth }}' verify=False"  \
+docker exec stackube_openstack_kolla_toolbox /usr/bin/ansible localhost -m os_keystone_role  -a "name=_member_  auth='{{ openstack_keystone_auth }}' verify=False"  \
     -e "{'openstack_keystone_auth': {
            'auth_url': 'https://${OPENSTACK_ENDPOINT_IP}:35358/v3',
            'username': 'admin',

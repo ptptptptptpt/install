@@ -27,7 +27,7 @@ sed -i "s/__OVSDB_IP__/${OVSDB_IP}/g" /etc/stackube/openstack/neutron-dhcp-agent
 sed -i "s/__LOCAL_IP__/${ML2_LOCAL_IP}/g" /etc/stackube/openstack/neutron-dhcp-agent/ml2_conf.ini
 
 docker run -d  --net host  \
-    --name stackube_neutron_dhcp_agent  \
+    --name stackube_openstack_neutron_dhcp_agent  \
     -v /etc/stackube/openstack/neutron-dhcp-agent/:/var/lib/kolla/config_files/:ro  \
     -v /var/log/stackube/openstack:/var/log/kolla/:rw  \
     -v /run:/run:shared  \

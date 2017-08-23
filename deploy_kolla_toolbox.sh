@@ -24,7 +24,7 @@ cp -a ${programDir}/config_openstack/kolla-toolbox /etc/stackube/openstack/
 
 ## kolla-toolbox
 docker run -d  --net host  \
-    --name stackube_kolla_toolbox  \
+    --name stackube_openstack_kolla_toolbox  \
     -v /run/:/run/:shared  \
     -v /dev/:/dev/:rw  \
     -v /etc/stackube/openstack/kolla-toolbox/:/var/lib/kolla/config_files/:ro  \
