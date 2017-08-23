@@ -181,6 +181,58 @@ done
 
 
 
+## 控制节点部署 ceph-mon
+export CEPH_MON_PUBLIC_IP='10.100.143.135'
+export CEPH_FSID='aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'
+/bin/bash ${programDir}/deploy_ceph_mon.sh
+
+
+
+
+
+## 存储节点 部署 ceph-osd
+(
+set -x
+
+for IP in '10.100.143.135'  ; do
+    ssh root@${IP} 'mkdir -p /etc/stackube/ceph /tmp/stackube_install'
+    scp -r ${programDir}/config_ceph/ceph-osd root@${IP}:/etc/stackube/ceph/
+    scp -r /var/lib/stackube/ceph/ceph_mon_config/{ceph.client.admin.keyring,ceph.conf} root@${IP}:/etc/stackube/ceph/ceph-osd/
+
+    scp ${programDir}/deploy_ceph_osd.sh root@${IP}:/tmp/stackube_install/
+    ssh root@${IP} "export CEPH_OSD_PUBLIC_IP='${IP}'
+                    export CEPH_OSD_CLUSTER_IP='${IP}'
+                    export CEPH_OSD_DATA_DIR='/var/lib/stackube/openstack/ceph_osd'
+                    /bin/bash /tmp/stackube_install/deploy_ceph_osd.sh"
+
+    docker exec stackube_ceph_mon ceph -s
+
+done
+)
+
+
+
+
+
+### 计算节点 host需要安装ceph，供 kubelet 使用
+yum install centos-release-openstack-ocata.noarch -y
+yum install ceph -y 
+systemctl disable ceph.target ceph-mds.target ceph-mon.target ceph-osd.target
+cp -f /var/lib/stackube/ceph/ceph_mon_config/* /etc/ceph/
+ceph -s
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

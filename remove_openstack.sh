@@ -6,23 +6,24 @@ programDir=$(readlink -f $programDir)
 parentDir="$(dirname $programDir)"
 programDirBaseName=$(basename $programDir)
 
+set -o errexit
+set -o nounset
+set -o pipefail
 set -x
 
 ## clean certificates
-source ${programDir}/lib_tls.sh || exit 1
-cleanup_CA || exit 1
-
+source ${programDir}/lib_tls.sh
+cleanup_CA
 
 
 ## remove docker containers
-stackubeConstaners=`docker ps -a | awk '{print $NF}' | grep '^stackube_' `
+stackubeConstaners=`docker ps -a | awk '{print $NF}' | grep '^stackube_openstack_' `
 if [ "${stackubeConstaners}" ]; then
-    docker kill -s 9 $stackubeConstaners
-    docker rm -f $stackubeConstaners || exit 1
+    docker rm -f $stackubeConstaners
 fi
 
 ## rm dirs
-rm -fr /etc/stackube/openstack  /var/log/stackube/openstack  /var/lib/stackube/openstack  || exit 1
+rm -fr /etc/stackube/openstack  /var/log/stackube/openstack  /var/lib/stackube/openstack
 
 
 
