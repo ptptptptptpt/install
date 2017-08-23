@@ -18,23 +18,23 @@ set -x
 
 ## 控制节点
 
-/bin/bash ${programDir}/deploy_kolla_toolbox.sh
+/bin/bash ${programDir}/openstack/deploy_kolla_toolbox.sh
 
 
 export MYSQL_ROOT_PWD='mysql123'
-/bin/bash ${programDir}/deploy_mariadb.sh
+/bin/bash ${programDir}/openstack/deploy_mariadb.sh
 
 
 
 export RABBITMQ_PWD='rabbitl123'
-/bin/bash ${programDir}/deploy_rabbitmq.sh
+/bin/bash ${programDir}/openstack/deploy_rabbitmq.sh
 
 
 export OPENSTACK_ENDPOINT_IP='10.100.143.135'
 export KEYSTONE_API_IP='10.100.143.135'
 export NEUTRON_API_IP='10.100.143.135'
 export CINDER_API_IP='10.100.143.135'
-/bin/bash ${programDir}/deploy_haproxy.sh
+/bin/bash ${programDir}/openstack/deploy_haproxy.sh
 
 
 
@@ -44,7 +44,7 @@ export MYSQL_HOST='10.100.143.135'
 export MYSQL_ROOT_PWD='mysql123'
 export MYSQL_KEYSTONE_PWD='mysqkeystonel123'
 export KEYSTONE_ADMIN_PWD='keystoneadminl123'
-/bin/bash ${programDir}/deploy_openstack_keystone.sh
+/bin/bash ${programDir}/openstack/deploy_openstack_keystone.sh
 
 
 
@@ -79,14 +79,14 @@ function process_neutron_conf {
 
 ## config files
 mkdir -p /etc/stackube/openstack
-cp -a ${programDir}/config_openstack/neutron-server /etc/stackube/openstack/
+cp -a ${programDir}/openstack/config_openstack/neutron-server /etc/stackube/openstack/
 process_neutron_conf /etc/stackube/openstack/neutron-server/neutron.conf
 ## for OS_CACERT
 source /etc/stackube/openstack/admin-openrc.sh 
 cp -f ${OS_CACERT} /etc/stackube/openstack/neutron-server/haproxy-ca.crt
 
 
-/bin/bash ${programDir}/deploy_openstack_neutron_server.sh
+/bin/bash ${programDir}/openstack/deploy_openstack_neutron_server.sh
 
 
 
@@ -100,10 +100,10 @@ set -x
 
 for IP in '10.100.143.135'  ; do 
     ssh root@${IP} 'mkdir -p /etc/stackube/openstack /tmp/stackube_install'
-    scp -r ${programDir}/config_openstack/{openvswitch-db-server,openvswitch-vswitchd,neutron-openvswitch-agent} root@${IP}:/etc/stackube/openstack/
-    scp -r /etc/stackube/openstack/neutron-server/neutron.conf ${programDir}/config_openstack/neutron-server/ml2_conf.ini  root@${IP}:/etc/stackube/openstack/neutron-openvswitch-agent/
+    scp -r ${programDir}/openstack/config_openstack/{openvswitch-db-server,openvswitch-vswitchd,neutron-openvswitch-agent} root@${IP}:/etc/stackube/openstack/
+    scp -r /etc/stackube/openstack/neutron-server/neutron.conf ${programDir}/openstack/config_openstack/neutron-server/ml2_conf.ini  root@${IP}:/etc/stackube/openstack/neutron-openvswitch-agent/
 
-    scp ${programDir}/deploy_openstack_neutron_openvswitch_agent.sh root@${IP}:/tmp/stackube_install/
+    scp ${programDir}/openstack/deploy_openstack_neutron_openvswitch_agent.sh root@${IP}:/tmp/stackube_install/
     ssh root@${IP} "export OVSDB_IP='${IP}'
                     export ML2_LOCAL_IP='${IP}'
                     export NEUTRON_EXT_IF='veth_2_b'
@@ -121,11 +121,11 @@ set -x
 
 for IP in '10.100.143.135'  ; do 
     ssh root@${IP} 'mkdir -p /etc/stackube/openstack /tmp/stackube_install'
-    scp -r ${programDir}/config_openstack/neutron-l3-agent root@${IP}:/etc/stackube/openstack/
+    scp -r ${programDir}/openstack/config_openstack/neutron-l3-agent root@${IP}:/etc/stackube/openstack/
     scp -r /etc/stackube/openstack/neutron-server/neutron.conf \
-           ${programDir}/config_openstack/neutron-server/ml2_conf.ini  root@${IP}:/etc/stackube/openstack/neutron-l3-agent/
+           ${programDir}/openstack/config_openstack/neutron-server/ml2_conf.ini  root@${IP}:/etc/stackube/openstack/neutron-l3-agent/
 
-    scp ${programDir}/deploy_openstack_neutron_l3_agent.sh root@${IP}:/tmp/stackube_install/
+    scp ${programDir}/openstack/deploy_openstack_neutron_l3_agent.sh root@${IP}:/tmp/stackube_install/
     ssh root@${IP} "export OVSDB_IP='${IP}'
                     export ML2_LOCAL_IP='${IP}'
                     /bin/bash /tmp/stackube_install/deploy_openstack_neutron_l3_agent.sh"
@@ -141,11 +141,11 @@ set -x
 
 for IP in '10.100.143.135'  ; do 
     ssh root@${IP} 'mkdir -p /etc/stackube/openstack /tmp/stackube_install'
-    scp -r ${programDir}/config_openstack/neutron-dhcp-agent root@${IP}:/etc/stackube/openstack/
+    scp -r ${programDir}/openstack/config_openstack/neutron-dhcp-agent root@${IP}:/etc/stackube/openstack/
     scp -r /etc/stackube/openstack/neutron-server/neutron.conf \
-           ${programDir}/config_openstack/neutron-server/ml2_conf.ini  root@${IP}:/etc/stackube/openstack/neutron-dhcp-agent/
+           ${programDir}/openstack/config_openstack/neutron-server/ml2_conf.ini  root@${IP}:/etc/stackube/openstack/neutron-dhcp-agent/
 
-    scp ${programDir}/deploy_openstack_neutron_dhcp_agent.sh root@${IP}:/tmp/stackube_install/
+    scp ${programDir}/openstack/deploy_openstack_neutron_dhcp_agent.sh root@${IP}:/tmp/stackube_install/
     ssh root@${IP} "export OVSDB_IP='${IP}'
                     export ML2_LOCAL_IP='${IP}'
                     /bin/bash /tmp/stackube_install/deploy_openstack_neutron_dhcp_agent.sh"
@@ -163,11 +163,11 @@ set -x
 
 for IP in '10.100.143.135'  ; do 
     ssh root@${IP} 'mkdir -p /etc/stackube/openstack /tmp/stackube_install'
-    scp -r ${programDir}/config_openstack/neutron-lbaas-agent root@${IP}:/etc/stackube/openstack/
+    scp -r ${programDir}/openstack/config_openstack/neutron-lbaas-agent root@${IP}:/etc/stackube/openstack/
     scp -r /etc/stackube/openstack/neutron-server/neutron.conf \
-           ${programDir}/config_openstack/neutron-server/{ml2_conf.ini,neutron_lbaas.conf}  root@${IP}:/etc/stackube/openstack/neutron-lbaas-agent/
+           ${programDir}/openstack/config_openstack/neutron-server/{ml2_conf.ini,neutron_lbaas.conf}  root@${IP}:/etc/stackube/openstack/neutron-lbaas-agent/
 
-    scp ${programDir}/deploy_openstack_neutron_lbaas_agent.sh root@${IP}:/tmp/stackube_install/
+    scp ${programDir}/openstack/deploy_openstack_neutron_lbaas_agent.sh root@${IP}:/tmp/stackube_install/
     ssh root@${IP} "export OVSDB_IP='${IP}'
                     export ML2_LOCAL_IP='${IP}'
                     export KEYSTONE_API_IP='10.100.143.135'
@@ -184,7 +184,7 @@ done
 ## 控制节点部署 ceph-mon
 export CEPH_MON_PUBLIC_IP='10.100.143.135'
 export CEPH_FSID='aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'
-/bin/bash ${programDir}/deploy_ceph_mon.sh
+/bin/bash ${programDir}/ceph/deploy_ceph_mon.sh
 
 
 
@@ -196,10 +196,10 @@ set -x
 
 for IP in '10.100.143.135'  ; do
     ssh root@${IP} 'mkdir -p /etc/stackube/ceph /tmp/stackube_install'
-    scp -r ${programDir}/config_ceph/ceph-osd root@${IP}:/etc/stackube/ceph/
+    scp -r ${programDir}/ceph/config_ceph/ceph-osd root@${IP}:/etc/stackube/ceph/
     scp -r /var/lib/stackube/ceph/ceph_mon_config/{ceph.client.admin.keyring,ceph.conf} root@${IP}:/etc/stackube/ceph/ceph-osd/
 
-    scp ${programDir}/deploy_ceph_osd.sh root@${IP}:/tmp/stackube_install/
+    scp ${programDir}/ceph/deploy_ceph_osd.sh root@${IP}:/tmp/stackube_install/
     ssh root@${IP} "export CEPH_OSD_PUBLIC_IP='${IP}'
                     export CEPH_OSD_CLUSTER_IP='${IP}'
                     export CEPH_OSD_DATA_DIR='/var/lib/stackube/openstack/ceph_osd'
@@ -212,7 +212,7 @@ done
 
 
 
-
+exit 0
 
 ### 计算节点 host需要安装ceph，供 kubelet 使用
 yum install centos-release-openstack-ocata.noarch -y

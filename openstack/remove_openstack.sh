@@ -12,7 +12,7 @@ set -o pipefail
 set -x
 
 ## clean certificates
-source ${programDir}/lib_tls.sh
+source ${programDir}/../lib_tls.sh
 cleanup_CA
 
 

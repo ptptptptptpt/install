@@ -24,7 +24,7 @@ HOST_IP=${OPENSTACK_ENDPOINT_IP}
 SERVICE_HOST=${OPENSTACK_ENDPOINT_IP}
 SERVICE_IP=${OPENSTACK_ENDPOINT_IP}
 DATA_DIR='/etc/stackube/openstack/certificates'
-source ${programDir}/lib_tls.sh
+source ${programDir}/../lib_tls.sh
 mkdir -p ${DATA_DIR}
 init_CA
 init_cert
