@@ -1,7 +1,5 @@
 #!/bin/bash
 
-
-
 programDir=`dirname $0`
 programDir=$(readlink -f $programDir)
 parentDir="$(dirname $programDir)"
@@ -13,40 +11,17 @@ set -o pipefail
 set -x
 
 
+source $(readlink -f $1)
 
-function usage {
-    echo "
-Usage:
-   bash $(basename $0) CONFIG_FILE
-"
-}
+[ "${CONTROL_NODE_PRIVATE_IP}" ]
 
+[ "${NETWORK_NODES_PRIVATE_IP}" ]
+#[ "${NETWORK_NODES_NEUTRON_EXT_IF}" ]
 
+[ "${COMPUTE_NODES_PRIVATE_IP}" ]
 
-
-
-######################################
-# main
-######################################
-
-## config
-[ "$1" ] || { usage; exit 1; }
-[ -f "$1" ] || { echo "Error: $1 not exists or not a file!"; exit 1; }
-
-source $(readlink -f $1) || { echo "'source $(readlink -f $1)' failed!"; exit 1; }
-
-[ "${CONTROL_NODE_PUBLIC_IP}" ] || { echo "Error: CONTROL_NODE_PUBLIC_IP not defined!"; exit 1; }
-[ "${CONTROL_NODE_PRIVATE_IP}" ] || { echo "Error: CONTROL_NODE_PRIVATE_IP not defined!"; exit 1; }
-
-[ "${NETWORK_NODES_PRIVATE_IP}" ] || { echo "Error: NETWORK_NODES_PRIVATE_IP not defined!"; exit 1; }
-#[ "${NETWORK_NODES_NEUTRON_EXT_IF}" ] || { echo "Error: NETWORK_NODES_NEUTRON_EXT_IF not defined!"; exit 1; }
-
-[ "${COMPUTE_NODES_PRIVATE_IP}" ] || { echo "Error: COMPUTE_NODES_PRIVATE_IP not defined!"; exit 1; }
-
-[ "${STORAGE_NODES_PRIVATE_IP}" ] || { echo "Error: STORAGE_NODES_PRIVATE_IP not defined!"; exit 1; }
-[ "${STORAGE_NODES_CEPH_OSD_DATA_DIR}" ] || { echo "Error: STORAGE_NODES_CEPH_OSD_DATA_DIR not defined!"; exit 1; }
-
-
+[ "${STORAGE_NODES_PRIVATE_IP}" ]
+[ "${STORAGE_NODES_CEPH_OSD_DATA_DIR}" ]
 
 
 export OPENSTACK_ENDPOINT_IP="${CONTROL_NODE_PRIVATE_IP}"
@@ -58,41 +33,21 @@ export MYSQL_HOST="${CONTROL_NODE_PRIVATE_IP}"
 export MYSQL_ROOT_PWD=${MYSQL_ROOT_PWD:-MysqlRoot123}
 export MYSQL_KEYSTONE_PWD=${MYSQL_KEYSTONE_PWD:-MysqlKeystone123}
 export MYSQL_NEUTRON_PWD=${MYSQL_NEUTRON_PWD:-MysqlNeutron123}
+export MYSQL_CINDER_PWD=${MYSQL_CINDER_PWD:-MysqlCinder123}
 
 export RABBITMQ_HOST="${CONTROL_NODE_PRIVATE_IP}"
 export RABBITMQ_PWD=${RABBITMQ_PWD:-rabbitmq123}
 
 export KEYSTONE_ADMIN_PWD=${KEYSTONE_ADMIN_PWD:-KeystoneAdmin123}
 export KEYSTONE_NEUTRON_PWD=${KEYSTONE_NEUTRON_PWD:-KeystoneNeutron123}
-
-## ceph
-export CEPH_MON_PUBLIC_IP="${CONTROL_NODE_PRIVATE_IP}"
-export CEPH_FSID=${CEPH_FSID:-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee}
-
-## cinder
-export CINDER_API_IP="${CONTROL_NODE_PRIVATE_IP}"
 export KEYSTONE_CINDER_PWD=${KEYSTONE_CINDER_PWD:-KeystoneCinder123}
-export MYSQL_CINDER_PWD=${MYSQL_CINDER_PWD:-MysqlCinder123}
 
 
 
 
+########## all nodes ##########
 
-###### 所有节点安装 docker
-allIpList=`echo "
-${CONTROL_NODE_PRIVATE_IP}
-${NETWORK_NODES_PRIVATE_IP}
-${COMPUTE_NODES_PRIVATE_IP}
-${STORAGE_NODES_PRIVATE_IP}" | sed -e 's/,/\n/g' | sort | uniq `
-
-for IP in ${allIpList}; do
-    ssh root@${IP} 'mkdir /tmp/stackube_install'
-    scp ${programDir}/openstack/ensure_docker_installed.sh root@${IP}:/tmp/stackube_install/
-    ssh root@${IP} "/bin/bash /tmp/stackube_install/ensure_docker_installed.sh"
-done
-
-
-###### 所有节点 部署 toolbox
+# kolla-toolbox
 for IP in ${allIpList}; do
     ssh root@${IP} 'mkdir -p /etc/stackube/openstack /tmp/stackube_install'
     scp -r ${programDir}/openstack/config_openstack/kolla-toolbox root@${IP}:/etc/stackube/openstack/
@@ -103,7 +58,7 @@ done
 
 
 
-########## 控制节点 部署
+########## control node ##########
 
 # db, mq, haproxy
 /bin/bash ${programDir}/openstack/deploy_openstack_mariadb.sh
@@ -136,10 +91,6 @@ cp -f ${OS_CACERT} /etc/stackube/openstack/neutron-server/haproxy-ca.crt
 /bin/bash ${programDir}/openstack/deploy_openstack_neutron_server.sh
 
 
-# ceph-mon
-/bin/bash ${programDir}/ceph/deploy_ceph_mon.sh
-
-
 ## cinder api
 function process_cinder_conf {
     local cinderConfigFile="$1"
@@ -161,86 +112,14 @@ cp -f ${OS_CACERT} /etc/stackube/openstack/cinder-api/haproxy-ca.crt
 /bin/bash ${programDir}/openstack/deploy_openstack_cinder_api.sh
 
 
-## cinder scheduler
+# cinder scheduler
 mkdir -p /etc/stackube/openstack
 cp -a ${programDir}/openstack/config_openstack/cinder-scheduler /etc/stackube/openstack/
 cp -f /etc/stackube/openstack/cinder-api/cinder.conf  /etc/stackube/openstack/cinder-scheduler/
 /bin/bash ${programDir}/openstack/deploy_openstack_cinder_scheduler.sh
 
 
-
-
-####### 网络节点 部署
-
-## neutron l3_agent
-for IP in `echo ${NETWORK_NODES_PRIVATE_IP} | sed -e 's/,/ /g' ` ; do 
-    ssh root@${IP} 'mkdir -p /etc/stackube/openstack /tmp/stackube_install'
-    scp -r ${programDir}/openstack/config_openstack/neutron-l3-agent root@${IP}:/etc/stackube/openstack/
-    scp -r /etc/stackube/openstack/neutron-server/neutron.conf \
-           ${programDir}/openstack/config_openstack/neutron-server/ml2_conf.ini  root@${IP}:/etc/stackube/openstack/neutron-l3-agent/
-
-    scp ${programDir}/openstack/deploy_openstack_neutron_l3_agent.sh root@${IP}:/tmp/stackube_install/
-    ssh root@${IP} "export OVSDB_IP='${IP}'
-                    export ML2_LOCAL_IP='${IP}'
-                    /bin/bash /tmp/stackube_install/deploy_openstack_neutron_l3_agent.sh"
-done
-
-## neutron dhcp_agent
-for IP in `echo ${NETWORK_NODES_PRIVATE_IP} | sed -e 's/,/ /g' ` ; do 
-    ssh root@${IP} 'mkdir -p /etc/stackube/openstack /tmp/stackube_install'
-    scp -r ${programDir}/openstack/config_openstack/neutron-dhcp-agent root@${IP}:/etc/stackube/openstack/
-    scp -r /etc/stackube/openstack/neutron-server/neutron.conf \
-           ${programDir}/openstack/config_openstack/neutron-server/ml2_conf.ini  root@${IP}:/etc/stackube/openstack/neutron-dhcp-agent/
-
-    scp ${programDir}/openstack/deploy_openstack_neutron_dhcp_agent.sh root@${IP}:/tmp/stackube_install/
-    ssh root@${IP} "export OVSDB_IP='${IP}'
-                    export ML2_LOCAL_IP='${IP}'
-                    /bin/bash /tmp/stackube_install/deploy_openstack_neutron_dhcp_agent.sh"
-done
-
-
-## neutron lbaas_agent
-for IP in `echo ${NETWORK_NODES_PRIVATE_IP} | sed -e 's/,/ /g' ` ; do 
-    ssh root@${IP} 'mkdir -p /etc/stackube/openstack /tmp/stackube_install'
-    scp -r ${programDir}/openstack/config_openstack/neutron-lbaas-agent root@${IP}:/etc/stackube/openstack/
-    scp -r /etc/stackube/openstack/neutron-server/neutron.conf \
-           ${programDir}/openstack/config_openstack/neutron-server/{ml2_conf.ini,neutron_lbaas.conf}  root@${IP}:/etc/stackube/openstack/neutron-lbaas-agent/
-
-    scp ${programDir}/openstack/deploy_openstack_neutron_lbaas_agent.sh root@${IP}:/tmp/stackube_install/
-    ssh root@${IP} "export OVSDB_IP='${IP}'
-                    export ML2_LOCAL_IP='${IP}'
-                    export KEYSTONE_API_IP='${KEYSTONE_API_IP}'
-                    export KEYSTONE_NEUTRON_PWD='${KEYSTONE_NEUTRON_PWD}'
-                    /bin/bash /tmp/stackube_install/deploy_openstack_neutron_lbaas_agent.sh"
-done
-
-
-###### 存储节点 部署 ceph-osd
-storageIpList=(`echo "${STORAGE_NODES_PRIVATE_IP}" | sed -e 's/,/\n/g'`)
-osdDataDirList=(`echo "${STORAGE_NODES_CEPH_OSD_DATA_DIR}" | sed -e 's/,/\n/g'`)
-[ ${#storageIpList[@]} -eq ${#osdDataDirList[@]} ] || exit 1
-
-MAX=$((${#storageIpList[@]} - 1))
-for i in `seq 0 ${MAX}`; do
-    IP="${storageIpList[$i]}"
-    dataDir="${osdDataDirList[$i]}"
-    echo -e "\n------ ${IP} ${dataDir} ------"
-    ssh root@${IP} 'mkdir -p /etc/stackube/ceph /tmp/stackube_install'
-    scp -r ${programDir}/ceph/config_ceph/ceph-osd root@${IP}:/etc/stackube/ceph/
-    scp -r /var/lib/stackube/ceph/ceph_mon_config/{ceph.client.admin.keyring,ceph.conf} root@${IP}:/etc/stackube/ceph/ceph-osd/
-
-    scp ${programDir}/ceph/deploy_ceph_osd.sh root@${IP}:/tmp/stackube_install/
-    ssh root@${IP} "export CEPH_OSD_PUBLIC_IP='${IP}'
-                    export CEPH_OSD_CLUSTER_IP='${IP}'
-                    export CEPH_OSD_DATA_DIR='${dataDir}'
-                    /bin/bash /tmp/stackube_install/deploy_ceph_osd.sh"
-done
-
-docker exec stackube_ceph_mon ceph -s
-
-
-
-###### 选择一个或多个节点部署 cinder volume
+# cinder volume
 docker exec stackube_ceph_mon ceph osd pool create cinder 128 128
 docker exec stackube_ceph_mon ceph auth get-or-create client.cinder mon 'allow r' \
                  osd 'allow class-read object_prefix rbd_children, allow rwx pool=cinder'
@@ -259,9 +138,58 @@ done
 
 
 
+########## network nodes ##########
+
+# neutron l3_agent
+for IP in `echo ${NETWORK_NODES_PRIVATE_IP} | sed -e 's/,/ /g' ` ; do 
+    ssh root@${IP} 'mkdir -p /etc/stackube/openstack /tmp/stackube_install'
+    scp -r ${programDir}/openstack/config_openstack/neutron-l3-agent root@${IP}:/etc/stackube/openstack/
+    scp -r /etc/stackube/openstack/neutron-server/neutron.conf \
+           ${programDir}/openstack/config_openstack/neutron-server/ml2_conf.ini  root@${IP}:/etc/stackube/openstack/neutron-l3-agent/
+
+    scp ${programDir}/openstack/deploy_openstack_neutron_l3_agent.sh root@${IP}:/tmp/stackube_install/
+    ssh root@${IP} "export OVSDB_IP='${IP}'
+                    export ML2_LOCAL_IP='${IP}'
+                    /bin/bash /tmp/stackube_install/deploy_openstack_neutron_l3_agent.sh"
+done
 
 
-######## 网络节点 和 计算节点 部署 openvswitch_agent
+# neutron dhcp_agent
+for IP in `echo ${NETWORK_NODES_PRIVATE_IP} | sed -e 's/,/ /g' ` ; do 
+    ssh root@${IP} 'mkdir -p /etc/stackube/openstack /tmp/stackube_install'
+    scp -r ${programDir}/openstack/config_openstack/neutron-dhcp-agent root@${IP}:/etc/stackube/openstack/
+    scp -r /etc/stackube/openstack/neutron-server/neutron.conf \
+           ${programDir}/openstack/config_openstack/neutron-server/ml2_conf.ini  root@${IP}:/etc/stackube/openstack/neutron-dhcp-agent/
+
+    scp ${programDir}/openstack/deploy_openstack_neutron_dhcp_agent.sh root@${IP}:/tmp/stackube_install/
+    ssh root@${IP} "export OVSDB_IP='${IP}'
+                    export ML2_LOCAL_IP='${IP}'
+                    /bin/bash /tmp/stackube_install/deploy_openstack_neutron_dhcp_agent.sh"
+done
+
+
+# neutron lbaas_agent
+for IP in `echo ${NETWORK_NODES_PRIVATE_IP} | sed -e 's/,/ /g' ` ; do 
+    ssh root@${IP} 'mkdir -p /etc/stackube/openstack /tmp/stackube_install'
+    scp -r ${programDir}/openstack/config_openstack/neutron-lbaas-agent root@${IP}:/etc/stackube/openstack/
+    scp -r /etc/stackube/openstack/neutron-server/neutron.conf \
+           ${programDir}/openstack/config_openstack/neutron-server/{ml2_conf.ini,neutron_lbaas.conf}  root@${IP}:/etc/stackube/openstack/neutron-lbaas-agent/
+
+    scp ${programDir}/openstack/deploy_openstack_neutron_lbaas_agent.sh root@${IP}:/tmp/stackube_install/
+    ssh root@${IP} "export OVSDB_IP='${IP}'
+                    export ML2_LOCAL_IP='${IP}'
+                    export KEYSTONE_API_IP='${KEYSTONE_API_IP}'
+                    export KEYSTONE_NEUTRON_PWD='${KEYSTONE_NEUTRON_PWD}'
+                    /bin/bash /tmp/stackube_install/deploy_openstack_neutron_lbaas_agent.sh"
+done
+
+
+
+
+
+########## network & compute nodes ##########
+
+# openvswitch agent
 allIpList=`echo "
 ${NETWORK_NODES_PRIVATE_IP}
 ${COMPUTE_NODES_PRIVATE_IP}" | sed -e 's/,/\n/g' | sort | uniq `
@@ -276,10 +204,10 @@ for IP in ${allIpList}; do
                     /bin/bash /tmp/stackube_install/deploy_openstack_neutron_openvswitch_agent.sh"
 done
 
-# 网络节点 配置 NEUTRON_EXT_IF 
+# network nodes: NEUTRON_EXT_IF
 networkIpList=(`echo "${NETWORK_NODES_PRIVATE_IP}" | sed -e 's/,/\n/g'`)
 neutronExtIfList=(`echo "${NETWORK_NODES_NEUTRON_EXT_IF}" | sed -e 's/,/\n/g'`)
-[ ${#networkIpList[@]} -eq ${#neutronExtIfList[@]} ] || exit 1
+[ ${#networkIpList[@]} -eq ${#neutronExtIfList[@]} ]
 MAX=$((${#networkIpList[@]} - 1))
 for i in `seq 0 ${MAX}`; do
     IP="${networkIpList[$i]}"
@@ -289,20 +217,6 @@ for i in `seq 0 ${MAX}`; do
 done
 
 
-
-
-
-
-
-### 计算节点 host需要安装ceph，供 kubelet 使用
-for IP in `echo ${COMPUTE_NODES_PRIVATE_IP} | sed -e 's/,/ /g' ` ; do 
-    ssh root@${IP} "yum install centos-release-openstack-ocata.noarch -y"
-    ssh root@${IP} "yum install ceph -y"
-    ssh root@${IP} "systemctl disable ceph.target ceph-mds.target ceph-mon.target ceph-osd.target"
-    scp -r /var/lib/stackube/ceph/ceph_mon_config/*  root@${IP}:/etc/ceph/
-    ssh root@${IP} "ceph -s"
-    ssh root@${IP} "rbd -p cinder --id cinder --keyring=/etc/ceph/ceph.client.cinder.keyring ls"
-done
 
 
 

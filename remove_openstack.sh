@@ -9,7 +9,7 @@ programDirBaseName=$(basename $programDir)
 set -x
 
 ## clean certificates
-source ${programDir}/../lib_tls.sh || exit 1
+source ${programDir}/lib_tls.sh || exit 1
 cleanup_CA || exit 1
 
 
