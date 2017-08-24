@@ -1,0 +1,38 @@
+#!/bin/bash
+
+
+# There are four roles in a stackube deployment: control, network, compute, storage.
+# There is no conflict between any two roles. In other words, All of the roles could
+# be deployed on the same node(s).
+
+# The control node （目前只能1台）
+CONTROL_NODE_PUBLIC_IP='147.75.77.181'
+CONTROL_NODE_PRIVATE_IP='10.100.143.135'
+
+# The network nodes are where your l3-agent and loadbalancers will run.
+# At least 1 node. Could be more (separated by commas).
+NETWORK_NODES_PRIVATE_IP='10.100.143.135'
+NETWORK_NODES_NEUTRON_EXT_IF='veth_2_b'
+
+# The compute nodes are where your containers will run.
+# At least 1 node. Could be more (separated by commas).
+COMPUTE_NODES_PRIVATE_IP='10.100.143.135'
+
+# The storage nodes are where ceph-osd(s) will run.
+# At least 1 node. Could be more (separated by commas).
+STORAGE_NODES_PRIVATE_IP='10.100.143.135'
+STORAGE_NODES_CEPH_OSD_DATA_DIR='/var/lib/stackube/ceph/ceph_osd'
+
+
+
+CEPH_FSID='aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'
+
+
+MYSQL_ROOT_PWD='MysqlRoot123'
+MYSQL_KEYSTONE_PWD='MysqlKeystone123'
+KEYSTONE_ADMIN_PWD='KeystoneAdmin123'
+RABBITMQ_PWD='rabbitmq123'
+KEYSTONE_NEUTRON_PWD='KeystoneNeutron123'
+MYSQL_NEUTRON_PWD='MysqlNeutron123'
+KEYSTONE_CINDER_PWD='KeystoneCinder123'
+MYSQL_CINDER_PWD='MysqlCinder123'

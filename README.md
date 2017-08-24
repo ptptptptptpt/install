@@ -32,7 +32,7 @@
 
 控制节点有所有节点的 ssh key
 
-每个节点都要检查 os 版本，安装docker
+每个节点都要检查 os 版本，安装docker， run kolla-toolbox
 
 
 hostname 应与 私网ip 还是 公网ip 对应？
