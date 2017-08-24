@@ -24,7 +24,9 @@
 
 
 
-需要 root 身份执行
+SSH to the machine
+Become root (e.g. sudo su -)
+
 所有节点私网网卡 mtu 相同
 
 

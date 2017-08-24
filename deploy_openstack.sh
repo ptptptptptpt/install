@@ -47,6 +47,12 @@ export KEYSTONE_CINDER_PWD=${KEYSTONE_CINDER_PWD:-KeystoneCinder123}
 
 ########## all nodes ##########
 
+allIpList=`echo "
+${CONTROL_NODE_PRIVATE_IP}
+${NETWORK_NODES_PRIVATE_IP}
+${COMPUTE_NODES_PRIVATE_IP}
+${STORAGE_NODES_PRIVATE_IP}" | sed -e 's/,/\n/g' | sort | uniq `
+
 # kolla-toolbox
 for IP in ${allIpList}; do
     ssh root@${IP} 'mkdir -p /etc/stackube/openstack /tmp/stackube_install'
@@ -220,3 +226,15 @@ done
 
 
 
+######### control node ############
+
+# create public network
+yum install centos-release-openstack-ocata.noarch -y
+yum install python-openstackclient
+
+source /etc/stackube/openstack/admin-openrc.sh
+openstack network create --external --provider-physical-network physnet1 --provider-network-type flat public_1
+
+openstack network list
+openstack subnet list
+openstack endpoint list
