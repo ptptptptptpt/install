@@ -77,12 +77,22 @@ export MYSQL_CINDER_PWD=${MYSQL_CINDER_PWD:-MysqlCinder123}
 
 
 
-###### 所有节点 部署 toolbox
+
+###### 所有节点安装 docker
 allIpList=`echo "
 ${CONTROL_NODE_PRIVATE_IP}
 ${NETWORK_NODES_PRIVATE_IP}
 ${COMPUTE_NODES_PRIVATE_IP}
 ${STORAGE_NODES_PRIVATE_IP}" | sed -e 's/,/\n/g' | sort | uniq `
+
+for IP in ${allIpList}; do
+    ssh root@${IP} 'mkdir /tmp/stackube_install'
+    scp ${programDir}/openstack/ensure_docker_installed.sh root@${IP}:/tmp/stackube_install/
+    ssh root@${IP} "/bin/bash /tmp/stackube_install/ensure_docker_installed.sh"
+done
+
+
+###### 所有节点 部署 toolbox
 for IP in ${allIpList}; do
     ssh root@${IP} 'mkdir -p /etc/stackube/openstack /tmp/stackube_install'
     scp -r ${programDir}/openstack/config_openstack/kolla-toolbox root@${IP}:/etc/stackube/openstack/
@@ -251,12 +261,11 @@ done
 
 
 
-## 网络节点 和 计算节点 部署 openvswitch_agent
-
-## 网络节点 NEUTRON_EXT_IF 不为空，计算节点为空
-export NEUTRON_EXT_IF="${NETWORK_NODES_NEUTRON_EXT_IF}"
-
-for IP in '10.100.143.135'  ; do 
+######## 网络节点 和 计算节点 部署 openvswitch_agent
+allIpList=`echo "
+${NETWORK_NODES_PRIVATE_IP}
+${COMPUTE_NODES_PRIVATE_IP}" | sed -e 's/,/\n/g' | sort | uniq `
+for IP in ${allIpList}; do
     ssh root@${IP} 'mkdir -p /etc/stackube/openstack /tmp/stackube_install'
     scp -r ${programDir}/openstack/config_openstack/{openvswitch-db-server,openvswitch-vswitchd,neutron-openvswitch-agent} root@${IP}:/etc/stackube/openstack/
     scp -r /etc/stackube/openstack/neutron-server/neutron.conf ${programDir}/openstack/config_openstack/neutron-server/ml2_conf.ini  root@${IP}:/etc/stackube/openstack/neutron-openvswitch-agent/
@@ -264,10 +273,21 @@ for IP in '10.100.143.135'  ; do
     scp ${programDir}/openstack/deploy_openstack_neutron_openvswitch_agent.sh root@${IP}:/tmp/stackube_install/
     ssh root@${IP} "export OVSDB_IP='${IP}'
                     export ML2_LOCAL_IP='${IP}'
-                    export NEUTRON_EXT_IF='${NEUTRON_EXT_IF}'
                     /bin/bash /tmp/stackube_install/deploy_openstack_neutron_openvswitch_agent.sh"
-
 done
+
+# 网络节点 配置 NEUTRON_EXT_IF 
+networkIpList=(`echo "${NETWORK_NODES_PRIVATE_IP}" | sed -e 's/,/\n/g'`)
+neutronExtIfList=(`echo "${NETWORK_NODES_NEUTRON_EXT_IF}" | sed -e 's/,/\n/g'`)
+[ ${#networkIpList[@]} -eq ${#neutronExtIfList[@]} ] || exit 1
+MAX=$((${#networkIpList[@]} - 1))
+for i in `seq 0 ${MAX}`; do
+    IP="${networkIpList[$i]}"
+    extIf="${neutronExtIfList[$i]}"
+    echo -e "\n------ ${IP} ${extIf} ------"
+    ssh root@${IP} "docker exec stackube_openstack_openvswitch_db /usr/local/bin/kolla_ensure_openvswitch_configured br-ex ${extIf}"
+done
+
 
 
 
@@ -275,10 +295,7 @@ done
 
 
 ### 计算节点 host需要安装ceph，供 kubelet 使用
-(
-set -x
-
-for IP in '10.100.143.135'  ; do
+for IP in `echo ${COMPUTE_NODES_PRIVATE_IP} | sed -e 's/,/ /g' ` ; do 
     ssh root@${IP} "yum install centos-release-openstack-ocata.noarch -y"
     ssh root@${IP} "yum install ceph -y"
     ssh root@${IP} "systemctl disable ceph.target ceph-mds.target ceph-mon.target ceph-osd.target"
@@ -286,7 +303,6 @@ for IP in '10.100.143.135'  ; do
     ssh root@${IP} "ceph -s"
     ssh root@${IP} "rbd -p cinder --id cinder --keyring=/etc/ceph/ceph.client.cinder.keyring ls"
 done
-)
 
 
 

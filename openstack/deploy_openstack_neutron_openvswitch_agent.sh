@@ -2,8 +2,8 @@
 #
 # Dependencies:
 #
-# - ``OVSDB_IP``, ``ML2_LOCAL_IP``
-# - ``NEUTRON_EXT_IF`` must be defined
+# - ``OVSDB_IP``
+# - ``ML2_LOCAL_IP`` must be defined
 #
 
 
@@ -41,7 +41,7 @@ docker run -d  --net host  \
 sleep 5
 
 # config br
-docker exec stackube_openstack_openvswitch_db /usr/local/bin/kolla_ensure_openvswitch_configured br-ex ${NEUTRON_EXT_IF}
+docker exec stackube_openstack_openvswitch_db /usr/local/bin/kolla_ensure_openvswitch_configured br-ex
 
 
 ## openvswitch-vswitchd
