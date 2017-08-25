@@ -2,7 +2,7 @@
 #
 # Dependencies:
 #
-# - ``KUBERNETES_API_IP`` 
+# - ``KUBERNETES_API_PUBLIC_IP`` 
 # - ``CLUSTER_CIDR``, ``CLUSTER_GATEWAY``,
 # - ``KEYSTONE_ADMIN_URL``  must be defined
 #
@@ -55,7 +55,7 @@ data:
   integration-bridge: "br-int"
   user-cidr: "${CLUSTER_CIDR}"
   user-gateway: "${CLUSTER_GATEWAY}"
-  kubernetes-host: "${KUBERNETES_API_IP}"
+  kubernetes-host: "${KUBERNETES_API_PUBLIC_IP}"
   kubernetes-port: "6443"
   keyring: "${keyring}"
 EOF

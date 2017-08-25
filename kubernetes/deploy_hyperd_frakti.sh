@@ -2,7 +2,7 @@
 #
 # Dependencies:
 #
-# - ``KUBERNETES_API_IP``
+# - ``KUBERNETES_API_PRIVATE_IP``
 # - ``FRAKTI_VERSION``  must be defined
 #
 
@@ -17,10 +17,25 @@ set -o pipefail
 set -x
 
 
-## install hyper
+## install libvirtd
 yum install -y libvirt
 
-curl -sSL https://hypercontainer.io/install | bash 
+
+## install hyperd
+CENTOS7_QEMU_HYPER="qemu-hyper-2.4.1-3.el7.centos.x86_64"
+CENTOS7_HYPERSTART="hyperstart-0.8.1-1.el7.centos.x86_64"
+CENTOS7_HYPER="hyper-container-0.8.1-1.el7.centos.x86_64"
+
+set +e
+/bin/bash -c "ping -c 3 -W 2 hypercontainer-install.s3.amazonaws.com >/dev/null 2>&1"
+if [[ $? -ne 0 ]];then
+    S3_URL="http://mirror-hypercontainer-install.s3.amazonaws.com"
+else
+    S3_URL="http://hypercontainer-install.s3.amazonaws.com"
+fi
+set -e
+
+yum install -y ${S3_URL}/${CENTOS7_QEMU_HYPER}.rpm ${S3_URL}/${CENTOS7_HYPERSTART}.rpm ${S3_URL}/${CENTOS7_HYPER}.rpm
 
 cat > /etc/hyper/config << EOF
 Kernel=/var/lib/hyper/kernel
@@ -50,7 +65,7 @@ ExecStart=/usr/bin/frakti --v=3 \
           --logtostderr=false \
           --cgroup-driver=${cgroup_driver} \
           --listen=/var/run/frakti.sock \
-          --streaming-server-addr=${KUBERNETES_API_IP} \
+          --streaming-server-addr=${KUBERNETES_API_PRIVATE_IP} \
           --hyper-endpoint=127.0.0.1:22318
 MountFlags=shared
 #TasksMax=8192
