@@ -6,21 +6,33 @@ programDir=$(readlink -f $programDir)
 parentDir="$(dirname $programDir)"
 programDirBaseName=$(basename $programDir)
 
+set -o errexit
+set -o nounset
+set -o pipefail
 set -x
 
-## clean certificates
-source ${programDir}/lib_tls.sh || exit 1
-cleanup_CA || exit 1
+
+source $(readlink -f $1)
+
+[ "${CONTROL_NODE_PRIVATE_IP}" ]
+[ "${NETWORK_NODES_PRIVATE_IP}" ]
+[ "${COMPUTE_NODES_PRIVATE_IP}" ]
+[ "${STORAGE_NODES_PRIVATE_IP}" ]
 
 
-## remove docker containers
-stackubeConstaners=`docker ps -a | awk '{print $NF}' | grep '^stackube_openstack_' `
-if [ "${stackubeConstaners}" ]; then
-    docker rm -f $stackubeConstaners || exit 1
-fi
 
-## rm dirs
-rm -fr /etc/stackube/openstack  /var/log/stackube/openstack  /var/lib/stackube/openstack || exit 1
+allIpList=`echo "
+${CONTROL_NODE_PRIVATE_IP}
+${NETWORK_NODES_PRIVATE_IP}
+${COMPUTE_NODES_PRIVATE_IP}
+${STORAGE_NODES_PRIVATE_IP}" | sed -e 's/,/\n/g' | sort | uniq `
+
+for IP in ${allIpList}; do
+    ssh root@${IP} 'mkdir -p /tmp/stackube_install'
+    scp ${programDir}/openstack/remove_openstack_from_node.sh root@${IP}:/tmp/stackube_install/
+    scp ${programDir}/lib_tls.sh root@${IP}:/tmp/stackube_install/
+    ssh root@${IP} "/bin/bash /tmp/stackube_install/remove_openstack_from_node.sh"
+done
 
 
 

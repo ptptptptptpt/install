@@ -6,17 +6,28 @@ programDir=$(readlink -f $programDir)
 parentDir="$(dirname $programDir)"
 programDirBaseName=$(basename $programDir)
 
+set -o errexit
+set -o nounset
+set -o pipefail
 set -x
 
 
-## remove docker containers
-stackubeCephConstaners=`docker ps -a | awk '{print $NF}' | grep '^stackube_ceph_' `
-if [ "${stackubeCephConstaners}" ]; then
-    docker rm -f $stackubeCephConstaners || exit 1
-fi
+source $(readlink -f $1)
 
-## rm dirs
-rm -fr /etc/stackube/ceph  /var/log/stackube/ceph  /var/lib/stackube/ceph || exit 1
+[ "${CONTROL_NODE_PRIVATE_IP}" ]
+[ "${STORAGE_NODES_PRIVATE_IP}" ]
+
+allIpList=`echo "
+${CONTROL_NODE_PRIVATE_IP}
+${STORAGE_NODES_PRIVATE_IP}" | sed -e 's/,/\n/g' | sort | uniq `
+
+for IP in ${allIpList}; do
+    ssh root@${IP} 'mkdir -p /tmp/stackube_install'
+    scp ${programDir}/ceph/remove_ceph_from_node.sh root@${IP}:/tmp/stackube_install/
+    ssh root@${IP} "/bin/bash /tmp/stackube_install/remove_ceph_from_node.sh"
+done
+
+
 
 
 

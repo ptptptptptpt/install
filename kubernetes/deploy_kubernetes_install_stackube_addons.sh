@@ -55,9 +55,9 @@ data:
   keyring: "${keyring}"
 EOF
 kubectl create -f ${programDir}/stackube-configmap.yaml 
-kubectl create -f ${programDir}/../deployment/stackube.yaml
-kubectl create -f ${programDir}/../deployment/stackube-proxy.yaml
-kubectl create -f ${programDir}/../deployment/flexvolume/flexvolume-ds.yaml
+kubectl create -f ${programDir}/../../deployment/stackube.yaml
+kubectl create -f ${programDir}/../../deployment/stackube-proxy.yaml
+kubectl create -f ${programDir}/../../deployment/flexvolume/flexvolume-ds.yaml
 
 
 
