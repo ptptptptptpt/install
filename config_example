@@ -5,21 +5,22 @@
 # There is no conflict between any two roles. In other words, All of the roles could
 # be deployed on the same node(s).
 
-# The control node （目前只能1台）
+# The control node is where openstack/kubernetes/ceph's control-plane will run.
+# At least one and only one node (for now).
 CONTROL_NODE_PUBLIC_IP='147.75.77.181'
 CONTROL_NODE_PRIVATE_IP='10.100.143.135'
 
-# The network nodes are where your l3-agent and loadbalancers will run.
-# At least 1 node. Could be more (separated by commas).
+# The network nodes are where neutron l3/lbaas/dhcp agents will run.
+# At least one node. Could be more (separated by commas).
 NETWORK_NODES_PRIVATE_IP='10.100.143.135,10.100.143.131'
 NETWORK_NODES_NEUTRON_EXT_IF='veth_2_b,veth_2_b'
 
-# The compute nodes are where your containers will run.
-# At least 1 node. Could be more (separated by commas).
+# The compute nodes are where your workloads will run.
+# At least one node. Could be more (separated by commas).
 COMPUTE_NODES_PRIVATE_IP='10.100.143.135,10.100.143.131'
 
 # The storage nodes are where ceph-osd(s) will run.
-# At least 1 node. Could be more (separated by commas).
+# At least one node. Could be more (separated by commas).
 STORAGE_NODES_PRIVATE_IP='10.100.143.135,10.100.143.131'
 STORAGE_NODES_CEPH_OSD_DATA_DIR='/var/lib/stackube/ceph/ceph_osd,/var/lib/stackube/ceph/ceph_osd'
 

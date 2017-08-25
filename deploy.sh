@@ -74,8 +74,14 @@ ${STORAGE_NODES_PRIVATE_IP}" | sed -e 's/,/\n/g' | sort | uniq `
     echo -e "\n$(date '+%Y-%m-%d %H:%M:%S') all_nodes_install_docker"
     all_nodes_install_docker "${allIpList}"
 
+    echo -e "\n$(date '+%Y-%m-%d %H:%M:%S') deploy_ceph"
+    bash ${programDir}/deploy_ceph.sh $(readlink -f $1)
+
     echo -e "\n$(date '+%Y-%m-%d %H:%M:%S') deploy_openstack"
-    #bash ${programDir}/deploy_openstack.sh
+    bash ${programDir}/deploy_openstack.sh $(readlink -f $1)
+
+    echo -e "\n$(date '+%Y-%m-%d %H:%M:%S') deploy_kubernetes"
+    bash ${programDir}/deploy_kubernetes.sh $(readlink -f $1)
 
     echo -e "\n$(date '+%Y-%m-%d %H:%M:%S') All done!"
 

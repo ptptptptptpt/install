@@ -71,9 +71,14 @@ kubectl taint nodes --all node-role.kubernetes.io/master-
 
 
 
+
+
+
 ## add nodes (TO DO)
 
 ## 所有节点都要加上 openstack 的 tls 证书 ？
+
+
 
 
 

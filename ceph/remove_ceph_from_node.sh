@@ -1,6 +1,7 @@
 #!/bin/bash
 #
 
+
 programDir=`dirname $0`
 programDir=$(readlink -f $programDir)
 parentDir="$(dirname $programDir)"
@@ -16,7 +17,7 @@ if [ "${stackubeCephConstaners}" ]; then
 fi
 
 ## rm dirs
-rm -fr /etc/stackube/ceph  /var/log/stackube/ceph  /var/lib/stackube/ceph || exit 1
+rm -fr /etc/stackube/ceph  /var/log/stackube/ceph  /var/lib/stackube/ceph  ${CEPH_OSD_DATA_DIR} || exit 1
 
 
 
