@@ -15,5 +15,5 @@ networking:
   podSubnet: "__POD_NET_CIDR__"
 api:
   advertiseAddress: "__KUBERNETES_API_PRIVATE_IP__"
-APIServerCertSANs: ["__KUBERNETES_API_PUBLIC_IP__"]
+apiServerCertSANs: ["__KUBERNETES_API_PUBLIC_IP__"]
 

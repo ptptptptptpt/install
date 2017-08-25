@@ -2,7 +2,7 @@
 #
 # Dependencies:
 #
-# - ``KUBERNETES_API_PRIVATE_IP``
+# - ``STREAMING_SERVER_ADDR``
 # - ``FRAKTI_VERSION``  must be defined
 #
 
@@ -33,9 +33,15 @@ if [[ $? -ne 0 ]];then
 else
     S3_URL="http://hypercontainer-install.s3.amazonaws.com"
 fi
-set -e
 
-yum install -y ${S3_URL}/${CENTOS7_QEMU_HYPER}.rpm ${S3_URL}/${CENTOS7_HYPERSTART}.rpm ${S3_URL}/${CENTOS7_HYPER}.rpm
+if rpm -qa | grep ${CENTOS7_HYPER} ; then
+    true
+else
+    set -e
+    yum install -y ${S3_URL}/${CENTOS7_QEMU_HYPER}.rpm ${S3_URL}/${CENTOS7_HYPERSTART}.rpm ${S3_URL}/${CENTOS7_HYPER}.rpm
+    set +e
+fi
+set -e
 
 cat > /etc/hyper/config << EOF
 Kernel=/var/lib/hyper/kernel
@@ -48,8 +54,11 @@ EOF
 
 
 ## install frakti
+set +e
+[ -f /usr/bin/frakti ] && rm -f /usr/bin/frakti
+set -e
 curl -sSL https://github.com/kubernetes/frakti/releases/download/${FRAKTI_VERSION}/frakti -o /usr/bin/frakti 
-chmod +x /usr/bin/frakti 
+chmod +x /usr/bin/frakti
 
 dockerInfo=`docker info `
 cgroup_driver=`echo "${dockerInfo}" | awk '/Cgroup Driver/{print $3}' `
@@ -65,7 +74,7 @@ ExecStart=/usr/bin/frakti --v=3 \
           --logtostderr=false \
           --cgroup-driver=${cgroup_driver} \
           --listen=/var/run/frakti.sock \
-          --streaming-server-addr=${KUBERNETES_API_PRIVATE_IP} \
+          --streaming-server-addr=${STREAMING_SERVER_ADDR} \
           --hyper-endpoint=127.0.0.1:22318
 MountFlags=shared
 #TasksMax=8192
@@ -83,9 +92,9 @@ WantedBy=multi-user.target
 systemctl daemon-reload
 systemctl enable hyperd frakti libvirtd
 systemctl restart hyperd libvirtd
-sleep 3
+sleep 5
 systemctl restart frakti
-sleep 10
+sleep 5
 
 ## check
 hyperctl list 
