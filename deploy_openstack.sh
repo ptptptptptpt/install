@@ -193,10 +193,11 @@ done
 
 
 
-########## network & compute nodes ##########
+########## control & network & compute nodes ##########
 
-# openvswitch agent
+# openvswitch agent (deploy on control node for k8s master)
 allIpList=`echo "
+${CONTROL_NODE_PRIVATE_IP}
 ${NETWORK_NODES_PRIVATE_IP}
 ${COMPUTE_NODES_PRIVATE_IP}" | sed -e 's/,/\n/g' | sort | uniq `
 for IP in ${allIpList}; do

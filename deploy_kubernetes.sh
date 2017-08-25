@@ -29,12 +29,20 @@ export CONTAINER_CIDR="10.244.1.0/24"
 export FRAKTI_VERSION="v1.0"
 
 
-
 ########## control & compute nodes ##########
 
 allIpList=`echo "
 ${CONTROL_NODE_PRIVATE_IP}
 ${COMPUTE_NODES_PRIVATE_IP}" | sed -e 's/,/\n/g' | sort | uniq `
+
+# hyperd frakti
+for IP in ${allIpList}; do
+    ssh root@${IP} 'mkdir -p /tmp/stackube_install'
+    scp ${programDir}/kubernetes/deploy_hyperd_frakti.sh root@${IP}:/tmp/stackube_install/
+    ssh root@${IP} "export FRAKTI_VERSION='${FRAKTI_VERSION}'
+                    export STREAMING_SERVER_ADDR='${IP}'
+                    /bin/bash /tmp/stackube_install/deploy_hyperd_frakti.sh"
+done
 
 # kubeadm kubectl kubelet
 for IP in ${allIpList}; do
@@ -43,13 +51,9 @@ for IP in ${allIpList}; do
     ssh root@${IP} "/bin/bash /tmp/stackube_install/deploy_kubeadm_kubectl_kubelet.sh"
 done
 
-# hyperd frakti
-for IP in ${allIpList}; do
-    ssh root@${IP} 'mkdir -p /tmp/stackube_install'
-    scp ${programDir}/kubernetes/deploy_hyperd_frakti.sh root@${IP}:/tmp/stackube_install/
-    ssh root@${IP} "/bin/bash /tmp/stackube_install/deploy_hyperd_frakti.sh"
-done
 
+
+########## control node ##########
 
 # kubernetes master
 sed -i "s|__KEYSTONE_URL__|${KEYSTONE_URL}|g" ${programDir}/kubernetes/kubeadm.yaml
@@ -57,8 +61,7 @@ sed -i "s|__POD_NET_CIDR__|${CLUSTER_CIDR}|g" ${programDir}/kubernetes/kubeadm.y
 sed -i "s/__KUBERNETES_API_PUBLIC_IP__/${KUBERNETES_API_PUBLIC_IP}/g" ${programDir}/kubernetes/kubeadm.yaml
 sed -i "s/__KUBERNETES_API_PRIVATE_IP__/${KUBERNETES_API_PRIVATE_IP}/g" ${programDir}/kubernetes/kubeadm.yaml
 /bin/bash ${programDir}/kubernetes/deploy_kubernetes_init_master.sh
-
-
+sleep 3
 
 
 ## 按需配置
@@ -68,30 +71,34 @@ kubectl taint nodes --all node-role.kubernetes.io/master-
 
 
 
+## add nodes (TO DO)
 
+## 所有节点都要加上 openstack 的 tls 证书 ？
+
+
+
+
+
+## install stackube addons
+/bin/bash ${programDir}/kubernetes/deploy_kubernetes_install_stackube_addons.sh
 sleep 15
 
-/bin/bash ${programDir}/kubernetes/deploy_kubernetes_certificate_approve.sh
 
+## certificate approve
+/bin/bash ${programDir}/kubernetes/deploy_kubernetes_certificate_approve.sh
 sleep 5
 
+
+## check
 kubectl get nodes
 kubectl get csr --all-namespaces
 
 
 
 
-exit 0
+########## control (k8s master) & compute nodes ###########
 
-
-
-## for cni 
-## 计算节点、网络节点、k8s master节点 都要装
-
-可是控制节点没有 ovs agent， 会不会影响 cni 调 ovs ？
-
-
-
+# install ovs for cni
 allIpList=`echo "
 ${CONTROL_NODE_PRIVATE_IP}
 ${COMPUTE_NODES_PRIVATE_IP}" | sed -e 's/,/\n/g' | sort | uniq `
