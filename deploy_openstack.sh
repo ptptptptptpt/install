@@ -227,11 +227,25 @@ done
 
 
 
+######### compute node ############
+
+# certificate for kubestack
+allIpList=`echo "
+${COMPUTE_NODES_PRIVATE_IP}" | sed -e 's/,/\n/g' | sort | uniq `
+for IP in ${allIpList}; do
+    scp -r /etc/stackube/openstack/certificates/CA/int-ca/ca-chain.pem root@${IP}:/usr/share/pki/ca-trust-source/anchors/stackube-chain.pem
+    ssh root@${IP} "update-ca-trust"
+done
+
+
+
+
+
 ######### control node ############
 
 # create public network
 yum install centos-release-openstack-ocata.noarch -y
-yum install python-openstackclient
+yum install python-openstackclient -y
 
 source /etc/stackube/openstack/admin-openrc.sh
 openstack network create --external --provider-physical-network physnet1 --provider-network-type flat public_1

@@ -36,8 +36,8 @@ source $(readlink -f $1) || { echo "'source $(readlink -f $1)' failed!"; exit 1;
 function all_nodes_check_distro {
     for IP in $1; do
         ssh root@${IP} 'mkdir -p /tmp/stackube_install' 
-        scp ${programDir}/{ensure_docker_installed.sh,lib_common.sh} root@${IP}:/tmp/stackube_install/
-        ssh root@${IP} "/bin/bash /tmp/stackube_install/ensure_docker_installed.sh"
+        scp ${programDir}/{ensure_distro_supported.sh,lib_common.sh} root@${IP}:/tmp/stackube_install/
+        ssh root@${IP} "/bin/bash /tmp/stackube_install/ensure_distro_supported.sh"
     done
 }
 
