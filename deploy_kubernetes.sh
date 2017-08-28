@@ -63,12 +63,14 @@ sed -i "s/__KUBERNETES_API_PRIVATE_IP__/${KUBERNETES_API_PRIVATE_IP}/g" ${progra
 /bin/bash ${programDir}/kubernetes/deploy_kubernetes_init_master.sh
 sleep 3
 
+
+
+export KUBECONFIG=/etc/kubernetes/admin.conf
+
+
 # install stackube addons
 /bin/bash ${programDir}/kubernetes/deploy_kubernetes_install_stackube_addons.sh
 sleep 10
-
-# certificate approve
-/bin/bash ${programDir}/kubernetes/deploy_kubernetes_certificate_approve.sh
 
 
 # add nodes
@@ -76,7 +78,7 @@ KUBEADM_TOKEN=`kubeadm token list | grep 'kubeadm init' | head -1 | awk '{print 
 allIpList=`echo "
 ${COMPUTE_NODES_PRIVATE_IP}" | sed -e 's/,/\n/g' | sort | uniq | grep -v "${CONTROL_NODE_PRIVATE_IP}"`
 for IP in ${allIpList}; do
-    ssh root@${IP} "kubeadm join --token "${KUBEADM_TOKEN}" ${CONTROL_NODE_PRIVATE_IP}:6443"
+    ssh root@${IP} "kubeadm join --token ${KUBEADM_TOKEN} ${CONTROL_NODE_PRIVATE_IP}:6443"
 done
 
 
@@ -85,20 +87,19 @@ set +e
 check=`echo "
 ${COMPUTE_NODES_PRIVATE_IP}" | sed -e 's/,/\n/g' | sort | uniq | grep "${CONTROL_NODE_PRIVATE_IP}" `
 if [ "${check}" ]; then
-    export KUBECONFIG=/etc/kubernetes/admin.conf
     kubectl taint nodes $(hostname) node-role.kubernetes.io/master-
 fi
+set -e
 
 
-sleep 10
+sleep 5
 
-# certificate approve again
+# certificate approve
 /bin/bash ${programDir}/kubernetes/deploy_kubernetes_certificate_approve.sh
 
 sleep 3
 
 ## check
-export KUBECONFIG=/etc/kubernetes/admin.conf
 kubectl get nodes
 kubectl get csr --all-namespaces
 

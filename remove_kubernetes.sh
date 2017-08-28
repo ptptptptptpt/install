@@ -18,9 +18,6 @@ source $(readlink -f $1)
 [ "${COMPUTE_NODES_PRIVATE_IP}" ]
 
 
-## control node
-kubeadm reset
-
 
 ## all nodes
 allIpList=`echo "
